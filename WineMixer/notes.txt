@@ -1,0 +1,45 @@
+﻿Observations:
+* Adding wine is pointless, unless you are going to mix it with something immediately.
+* Removing wine is pointless, unless you are going add wine into it or combine into it
+* Splitting wine is pointless, unless you are going to mix one of its containers immediately. 
+* Most of what we do is combine wines 
+* It is possible to get in a state where we can't mix more wines 
+* If you don't split wines, never worry about dumping wines 
+* Mixing a wine A, with another wine B or C, will not necessarily be better if mixed with B if B is better than C. 
+* Adding a wine means it should be mixed with the previous wine, or the next wine (otherwise don't add it).
+	* This reduces considering the same path too many times, and being inefficient. 
+* Instead of removing wine, we can just add to an existing wine spot.
+* Instead of re
+* To get a perfect match, we will have to add every wine. 
+
+
+Hypothesis
+* Mixing two tanks should always produce wine that is of better quality than before
+* The greedy approach is not always the best. 
+* Having a variety of wines, might be better than just distance. 
+* When making a choice of what Wine to add ... it would be best to try wines that haven't been used yet. 
+* This all looks a bit like the traveling salesman problem ... 
+* Adding the most common wine first, might make the most sense. Easiest to get the amount right. 
+	* Similar to sorting by the best possible direction. 
+* We could maybe compute how close all of the wines are to the target. 
+* Computing the total mix of wine can give us an estimate of how close we could potentially get. 
+	* I think I would use that to evaluate a state. 
+	* This is done by combining all of the wines 
+
+Process Example
+* There are N * M starting states (N tanks, M wines). 
+* The first thing to do is add a wine A
+* Then another A, B
+* Then you combine it C 
+* Then you add more wine C, D 
+* Then you either:
+	* Mix it (E)
+	* Or add more wine C,D,E 
+		* Either mix D,E = C,F 
+		* or mix C,E = D,F
+
+* You either:
+	* Mix existing wines
+	* Add a new wine, and mix 
+	* Add two new wines and mix them 
+

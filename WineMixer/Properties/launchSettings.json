@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Champagne": {
+      "commandName": "Project",
+      "commandLineArgs": "tanks.txt recipe.txt",
+      "workingDirectory": "C:\\Users\\cdigg\\git\\Champagne\\Champagne\\input"
+    }
+  }
+}
