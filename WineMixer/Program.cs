@@ -25,15 +25,15 @@ namespace Champagne
         public static IEnumerable<Mix> GetInitialMixes()
             => Enumerable.Range(0, NumWines).Select(i => new Mix(i, NumWines));
 
-        public static void OutputTree(ProcessTree pt, string indent = "")
+        public static void OutputTree(TransitionTree pt, string indent = "")
         {
-            Console.WriteLine($"{indent} children={pt.Children?.Count ?? -1} distance={pt.Process.Distance} step={pt.Process.Step}");
+            Console.WriteLine($"{indent} children={pt.Children?.Count ?? -1} distance={pt.Transition.Distance} step={pt.Transition.Step}");
             if (pt.Children != null)
                 foreach (var child in pt.Children)
                     OutputTree(child, indent + "  ");
         }
 
-        public static void ExpandTree(ProcessTree pt, int level)
+        public static void ExpandTree(TransitionTree pt, int level)
         {
             if (level > 0)
             {
@@ -60,7 +60,7 @@ namespace Champagne
             }
         }
 
-        public static void ApplyRandomSteps(ProcessTree pt)
+        public static void ApplyRandomSteps(TransitionTree pt)
         {
             for (var i = 0; i < 100; ++i)
             {
@@ -78,7 +78,7 @@ namespace Champagne
             TankSizes = TankSizes.LoadFromFile(args[0], NumWines);
             var state = new State(TankSizes, NumWines);
 
-            var pt = new ProcessTree(state, Target);
+            var pt = new TransitionTree(state, Target);
             OutputValidCombineSteps();
 
             for (var i = 3; i < 15; ++i)

@@ -1,10 +1,15 @@
 ﻿namespace Champagne;
 
-public class Process
+// Possible transitions:
+// 1. add two wines and combine them 
+// 2. add one wine and combine it with an existing one.
+// 3. combine two existing wines 
+
+public class Transition
 {
     public Mix Target { get; }
     public State State { get; } 
-    public Process Previous { get; }
+    public Transition Previous { get; }
 
     // AddWine A
     // AddWine B 
@@ -13,7 +18,7 @@ public class Process
     public Step Step { get; }
     public List<Step> NextSteps { get; set; } = new();
     public double Distance { get; }
-    public Process(Process previous, Step step)
+    public Transition(Transition previous, Step step)
     {
         Target = previous.Target;
         Previous = previous;
@@ -23,7 +28,7 @@ public class Process
         Distance = State.Distance(Target);
     }
 
-    public Process(State source, Mix target)
+    public Transition(State source, Mix target)
     {
         State = source;
         Target = target;
@@ -56,38 +61,15 @@ public class Process
     public bool IsStuck 
         => NextSteps.Count == 0;
 
-    public IReadOnlyList<Process> GetPossibleTransitions()
+    public IReadOnlyList<Transition> GetPossibleTransitions()
     {
-        // Do not include transitions where the distance is less
-        var r = NextSteps.Select(step => new Process(this, step)).Where(p => p.Distance <= Distance).ToList();
+        var r = NextSteps.Select(step => new Transition(this, step));
+        
+        // TODO: Validate: Do not include transitions where the distance is less
+        r = r.Where(p => p.Distance <= Distance);
+
         // TODO: log the difference between NextSteps.Count and r.Count 
-        return r;
+        var xs = r.ToList();
+        return xs;
     }
-}
-
-public class ProcessTree
-{
-    public ProcessTree Parent { get; }
-    public Process Process { get; }
-    public IReadOnlyList<ProcessTree> Children { get; set; }
-
-    public ProcessTree(State state, Mix target)
-     : this(null, new Process(state, target))
-    {
-    }
-
-    public ProcessTree(ProcessTree parent, Process process) 
-        => (Parent, Process) = (parent, process);
-
-    public void ComputeNextLevel()
-    {
-        if (Children == null)
-        {
-            var transitions = Process.GetPossibleTransitions();
-            Children = transitions.Select(p => new ProcessTree(this, p)).ToList();
-        }
-    }
-
-    public int Count 
-        => 1 + Children?.Sum(c => c.Count) ?? 0;
 }
