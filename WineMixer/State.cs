@@ -171,6 +171,24 @@ public class State
         return (index, d);  
     }
 
+    public int UsedWines()
+    {
+        var used = new bool[NumWines];
+        foreach (var mix in Contents)
+        {
+            if (mix != null)
+            {
+                for (var i = 0; i < mix.Values.Count; ++i)
+                {
+                    if (mix.Values[i] > 0)
+                        used[i] = true;
+                }
+            }
+        }
+
+        return used.Count(x => x);
+    }
+
     public double TotalScore(Mix target)
     {
         var mix = (Mix?)null;

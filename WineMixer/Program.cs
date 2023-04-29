@@ -9,6 +9,8 @@ namespace Champagne
         public static Mix Target;
         public static TankSizes TankSizes;
         public static int NumWines => Target.NumWines;
+        public static List<Transition> Transitions = new List<Transition>();
+        public static List<Transition> Considered = new List<Transition>();
 
         public static State ApplyRandomStep(State state)
         {
@@ -25,28 +27,12 @@ namespace Champagne
         public static IEnumerable<Mix> GetInitialMixes()
             => Enumerable.Range(0, NumWines).Select(i => new Mix(i, NumWines));
 
-        public static void OutputTree(TransitionTree pt, string indent = "")
-        {
-            Console.WriteLine($"{indent} children={pt.Children?.Count ?? -1} distance={pt.Transition.Distance} step={pt.Transition.Step}");
-            if (pt.Children != null)
-                foreach (var child in pt.Children)
-                    OutputTree(child, indent + "  ");
-        }
-
-        public static void ExpandTree(TransitionTree pt, int level)
-        {
-            if (level > 0)
-            {
-                pt.ComputeNextLevel();
-                foreach (var c in pt.Children)
-                    ExpandTree(c, level - 1);
-            }
-        }
-
         public static void OutputState(State state)
         {
             var d = state.Distance(Target);
-            Console.WriteLine($"Distance from target = {d}");
+            var score = state.TotalScore(Target);
+            var usedWines = state.UsedWines();
+            Console.WriteLine($"Distance from target = {d}, score = {score}, wines = {usedWines}");
             Console.WriteLine(state);
         }
 
@@ -60,16 +46,20 @@ namespace Champagne
             }
         }
 
-        public static void ApplyRandomSteps(TransitionTree pt)
+        public static void ComputeTransitions()
         {
-            for (var i = 0; i < 100; ++i)
+            var newTransitions = new List<Transition>();
+            foreach (var t in Transitions)
             {
-                pt.ComputeNextLevel();
-                if (pt.Count == 0)
-                    break;
-                var n = Random.Next(pt.Children.Count);
-                pt = pt.Children[n];
+                var n = t.ComputeTransitions();
+                Considered.Add(t);
+                foreach (var t2 in t.Transitions)
+                {
+                    newTransitions.Add(t2);
+                }
             }
+
+            Transitions = newTransitions;
         }
 
         public static void Main(string[] args)
@@ -78,7 +68,9 @@ namespace Champagne
             TankSizes = TankSizes.LoadFromFile(args[0], NumWines);
             var state = new State(TankSizes, NumWines);
 
-            var pt = new TransitionTree(state, Target);
+            var t = new Transition(null, state, null, null, null);
+            Transitions.Add(t);
+
             OutputValidCombineSteps();
 
             for (var i = 3; i < 15; ++i)

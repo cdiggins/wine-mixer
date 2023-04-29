@@ -67,35 +67,6 @@ public class TankSizes
     public IReadOnlyList<TankCombine> ValidTankCombines { get; }
     public IReadOnlyList<AddWine> ValidAddWines { get; }
 
-    // TEMP: Currently not used
-    // This was for computing all possible permutations of tanks adding up to a value. 
-    public IEnumerable<TankSet> TanksAddingUpTo(int target)
-    {
-        // Iterate over the tanks and find tanks that add up to the target. 
-        // TEMP: only creates tank sets of up to 2 items.
-        // Complexity Worst-case: O(N^2) 
-
-        for (var i = 0; i < Sizes.Count; ++i)
-        {
-            var size = Sizes[i];
-                
-            if (size > target) 
-                continue;
-            if (size == target)
-                yield return new TankSet(this, i);
-                
-            for (var j = i + 1; j < Sizes.Count; ++j)
-            {
-                var size2 = size + Sizes[j];
-                    
-                if (size2 > target) 
-                    continue;
-                if (size2 == target)
-                    yield return new TankSet(this, i, j);
-            }
-        }
-    }
-
     public static TankSizes LoadFromFile(string fileName, int numWines)
     {
         var lines = File.ReadAllLines(fileName);

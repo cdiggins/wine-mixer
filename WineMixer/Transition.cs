@@ -7,69 +7,119 @@
 
 public class Transition
 {
-    public Mix Target { get; }
-    public State State { get; } 
-    public Transition Previous { get; }
+    public Transition Prev { get; }
+    public State PrevState { get; }
+    public State CurrentState { get; }
+    public AddWine? AddWineA { get; }
+    public AddWine? AddWineB { get; }
+    public TankCombine Combine { get; }
+    public TankSizes TankSizes => PrevState.TankSizes;
+    public int NumWines => PrevState.NumWines;
 
-    // AddWine A
-    // AddWine B 
-    // CombineWines (A, B) or existing. 
-
-    public Step Step { get; }
-    public List<Step> NextSteps { get; set; } = new();
-    public double Distance { get; }
-    public Transition(Transition previous, Step step)
+    public int Length
     {
-        Target = previous.Target;
-        Previous = previous;
-        Step = step;
-        State = previous.State.Apply(step);
-        ComputeNextSteps();
-        Distance = State.Distance(Target);
-    }
-
-    public Transition(State source, Mix target)
-    {
-        State = source;
-        Target = target;
-        ComputeNextSteps();
-        Distance = State.Distance(Target);
-    }
-
-    public void ComputeNextSteps()
-    {
-        var steps = State.GetValidSteps(Target.NumWines);
-
-        // If you added wine twice in a row, don't add more you either combine or split. 
-        if (LastTwoStepsAreAdds())
+        get
         {
-            steps = steps.Where(x => x is not AddWine);
+            var cnt = 1;
+            for (var x = Prev; x != null; x = x.Prev)
+                cnt++;
+            return cnt;
+        }
+    }
+
+    public IReadOnlyList<Transition> Transitions { get; set; }
+    public bool IsValid { get;}
+
+    public Transition(Transition prev, State state, TankCombine? combine, AddWine? addWineA, AddWine? addWineB)
+    {
+        Prev = prev;
+        PrevState = state;
+        Combine = combine;
+        AddWineA = addWineA;
+        AddWineB = addWineB;
+        IsValid = ComputeValidity();
+        if (IsValid)
+        {
+            if (AddWineA != null)
+                state = state.Apply(AddWineA);
+
+            if (AddWineB != null)
+                state = state.Apply(AddWineB);
+
+            if (Combine != null)
+                CurrentState = state.Apply(Combine);
+        }
+    }
+
+    public bool ComputeValidity()
+    {
+        if (Combine == null)
+            return true;
+        
+        if (AddWineA == null)
+        {
+            if (AddWineB == null)
+                return false;
         }
 
-        // TODO: validate whether this makes a difference 
-        // BUG : This does not do what we want.
-        //steps = State.RemoveBadCombines(steps, Target);
+        if (AddWineA != null)
+        {
+            // If adding wine, it must be used in the combine step
+            if (Combine.InputA != AddWineA.Tank && Combine.InputB != AddWineA.Tank)
+                return false;
+        }
 
-        NextSteps = steps.ToList();
+        if (AddWineB != null)
+        {
+            // If adding wine, it must be used in the combine step
+            if (Combine.InputA != AddWineB.Tank && Combine.InputB != AddWineB.Tank)
+                return false;
+        }
+
+        // Combined tank must be occupied 
+        if (!TankOccupiedOrAddedTo(Combine.InputA))
+            return false;
+        if (!TankOccupiedOrAddedTo(Combine.InputB))
+            return false;
+
+        return true;
     }
 
-    public bool LastTwoStepsAreAdds()
+    public bool TankOccupiedOrAddedTo(int tank)
     {
-        return Step is AddWine && Previous?.Step is AddWine;
+        return PrevState.IsTankOccupied(tank) || AddWineA?.Tank == tank || AddWineB?.Tank == tank;
     }
 
-    public bool IsStuck 
-        => NextSteps.Count == 0;
-
-    public IReadOnlyList<Transition> GetPossibleTransitions()
+    public int ComputeTransitions()
     {
-        var r = NextSteps.Select(step => new Transition(this, step));
-        
-        // TODO: Validate: Do not include transitions where the distance is less
-        r = r.Where(p => p.Distance <= Distance);
+        Transitions ??= GetPossibleTransitions();
+        return Transitions.Count;
+    }
 
-        // TODO: log the difference between NextSteps.Count and r.Count 
-        var xs = r.ToList();
-        return xs;
+    private IReadOnlyList<Transition> GetPossibleTransitions()
+    {
+        if (!IsValid) return Array.Empty<Transition>();
+        if (CurrentState == null) return Array.Empty<Transition>();
+
+        var r = new List<Transition>();
+        foreach (var tc in TankSizes.ValidTankCombines)
+        {
+            r.Add(new Transition(this, CurrentState, tc, null, null));
+            
+            for (var w = 0; w < NumWines; ++w)
+            {
+                var addWineA = new AddWine(tc.InputA, w);
+                r.Add(new Transition(this, CurrentState, tc, addWineA, null));
+
+                for (var w2 = 0; w2 < NumWines; ++w)
+                {
+                    var addWineB = new AddWine(tc.InputB, w);
+                    r.Add(new Transition(this, CurrentState, tc, addWineA, addWineB));
+                }
+            }
+        }
+
+        r = r.Where(t => t.IsValid).ToList();
+        return r;
     }
 }
