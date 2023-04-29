@@ -1,2 +1,2 @@
-# wine-miexer
+# wine-mixer
 Wine Mixing Program
