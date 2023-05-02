@@ -30,8 +30,9 @@ public class Transition
     public IReadOnlyList<Transition> Transitions { get; set; }
     public bool IsValid { get;}
 
-    public Transition(Transition prev, State state, TankCombine? combine, AddWine? addWineA, AddWine? addWineB)
+    public Transition(Transition? prev, State state, TankCombine? combine, AddWine? addWineA, AddWine? addWineB)
     {
+        if (state == null) throw new ArgumentNullException(nameof(state));
         Prev = prev;
         PrevState = state;
         Combine = combine;
@@ -48,6 +49,10 @@ public class Transition
 
             if (Combine != null)
                 CurrentState = state.Apply(Combine);
+            else
+            {
+                CurrentState = state;
+            }
         }
     }
 
@@ -96,10 +101,15 @@ public class Transition
         return Transitions.Count;
     }
 
+    public bool IsBetterOrSame(Mix target)
+    {
+        return CurrentState.BestDistance(target) <= PrevState.BestDistance(target);
+    }
+
     private IReadOnlyList<Transition> GetPossibleTransitions()
     {
         if (!IsValid) return Array.Empty<Transition>();
-        if (CurrentState == null) return Array.Empty<Transition>();
+        if (PrevState == null) return Array.Empty<Transition>();
 
         var r = new List<Transition>();
         foreach (var tc in TankSizes.ValidTankCombines)
@@ -111,15 +121,42 @@ public class Transition
                 var addWineA = new AddWine(tc.InputA, w);
                 r.Add(new Transition(this, CurrentState, tc, addWineA, null));
 
-                for (var w2 = 0; w2 < NumWines; ++w)
+                for (var w2 = 0; w2 < NumWines; ++w2)
                 {
-                    var addWineB = new AddWine(tc.InputB, w);
+                    var addWineB = new AddWine(tc.InputB, w2);
                     r.Add(new Transition(this, CurrentState, tc, addWineA, addWineB));
                 }
             }
         }
 
         r = r.Where(t => t.IsValid).ToList();
+        return r;
+    }
+
+    public List<Step> GetSteps()
+    {
+        var stk = new Stack<Step>();
+        var t = this;
+        while (t != null)
+        {
+            if (t.Combine != null)
+                stk.Push(t.Combine);
+
+            if (t.AddWineB != null)
+                stk.Push(t.AddWineB);
+
+            if (t.AddWineA != null)
+                stk.Push(t.AddWineA);
+            
+            t = t.Prev;
+        }
+
+        var r = new List<Step>();
+        while (stk.Count > 0)
+        {
+            r.Add(stk.Pop());
+        }
+
         return r;
     }
 }

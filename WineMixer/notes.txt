@@ -43,3 +43,11 @@ Process Example
 	* Add a new wine, and mix 
 	* Add two new wines and mix them 
 
+//== 
+
+There should be a bonus for using more wines. 
+
+I am considering transitions that have no hope ... maybe deleting some of them would be a good idea? 
+I need to not sort so much. 
+Splitting would be good. 
+My current system is not good. 

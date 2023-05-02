@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualBasic.CompilerServices;
-
-namespace Champagne;
+﻿namespace Champagne;
 
 public class Mix
 {
@@ -88,6 +86,11 @@ public class Mix
     public override string ToString()
     {
         return "(" + string.Join(", ", Values) + ")";
+    }
+
+    public int CountUsedWines()
+    {
+        return Values.Count(x => x > 0);
     }
 
     public static Mix LoadFromFile(string fileName)

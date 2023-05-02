@@ -1,6 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace Champagne;
@@ -130,20 +128,6 @@ public class State
         return new State(TankSizes, newContents, NumWines);
     }
 
-    public double Distance(Mix mix)
-    {
-        var d = double.MaxValue;
-        foreach (var m in Contents)
-        {
-            if (m != null)
-            {
-                d = Math.Min(d, mix.DistanceFrom(m));
-            }
-        }
-
-        return d;
-    }
-
     public override string ToString()
     {
         var sb = new StringBuilder();
@@ -154,7 +138,12 @@ public class State
         return sb.ToString();
     }
 
-    public (int, double) BestTank(Mix target)
+    public double BestDistance(Mix target)
+    {
+        return BestTank(target).Item2;
+    }
+
+    public (int, double, Mix) BestTank(Mix target)
     {
         var d = double.MaxValue;
         var index = 0;
@@ -168,7 +157,7 @@ public class State
             }
         }
 
-        return (index, d);  
+        return (index, d, this[index]);  
     }
 
     public int UsedWines()
@@ -189,6 +178,8 @@ public class State
         return used.Count(x => x);
     }
 
+    // TEMP: disaster
+    /*
     public double TotalScore(Mix target)
     {
         var mix = (Mix?)null;
@@ -210,4 +201,5 @@ public class State
 
         return mix.Normal().DistanceFrom(target);
     }
+    */
 }

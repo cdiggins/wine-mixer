@@ -1,5 +1,4 @@
-﻿
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace Champagne
 {
@@ -9,8 +8,22 @@ namespace Champagne
         public static Mix Target;
         public static TankSizes TankSizes;
         public static int NumWines => Target.NumWines;
-        public static List<Transition> Transitions = new List<Transition>();
-        public static List<Transition> Considered = new List<Transition>();
+        public static Transition Root;
+        public static Dictionary<Transition, double> Scores = new ();
+        public static List<Transition> Transitions = new ();
+
+        public static double GetScore(Transition transition)
+        {
+            if (Scores.TryGetValue(transition, out var score))
+                return score;
+            var bestTank = transition.CurrentState.BestTank(Target);
+            var dist = bestTank.Item2;
+            var mix = bestTank.Item3;
+            var usedWines = mix?.CountUsedWines() ?? 0;
+            var newScore = dist * 1000.0 + transition.Length - usedWines * 100;
+            Scores.Add(transition, newScore);
+            return newScore;
+        }
 
         public static State ApplyRandomStep(State state)
         {
@@ -19,21 +32,16 @@ namespace Champagne
             return state.Apply(step);
         }
 
-        public static TankCombine? FindBestTankCombine(State state)
+        public static void Output(State state)
         {
-            return state.GetValidTankCombineSteps().OrderBy(x => state.Apply(x).Distance(Target)).FirstOrDefault();
-        }
-
-        public static IEnumerable<Mix> GetInitialMixes()
-            => Enumerable.Range(0, NumWines).Select(i => new Mix(i, NumWines));
-
-        public static void OutputState(State state)
-        {
-            var d = state.Distance(Target);
-            var score = state.TotalScore(Target);
+            var bestTank = state.BestTank(Target);
+            var tank = bestTank.Item1;
+            var dist = bestTank.Item2;
+            var mix = bestTank.Item3;
             var usedWines = state.UsedWines();
-            Console.WriteLine($"Distance from target = {d}, score = {score}, wines = {usedWines}");
-            Console.WriteLine(state);
+            Console.WriteLine($"Distance from target = {dist}, wines = {usedWines}");
+            Console.WriteLine($"Target = {Target}, ");
+            Console.WriteLine($"Tank [{tank}] contains [{mix}]");
         }
 
         public static void OutputValidCombineSteps()
@@ -46,20 +54,127 @@ namespace Champagne
             }
         }
 
-        public static void ComputeTransitions()
+        public static void Shuffle<T>(List<T> list)
         {
-            var newTransitions = new List<Transition>();
-            foreach (var t in Transitions)
+            for (var i = 0; i < list.Count; ++i)
             {
-                var n = t.ComputeTransitions();
-                Considered.Add(t);
+                var j = Random.Next(list.Count);
+                var tmp = list[i];
+                list[i] = list[j];
+                list[j] = tmp;
+            }
+        }
+
+        public static List<Transition> GetRandomTransitions(int n)
+        {
+            var tmp = Scores.Keys.ToList();
+            if (tmp.Count < n) return tmp;
+            Shuffle(tmp);
+            return tmp.Take(n).ToList();
+        }
+
+        public static void OldComputeTransitions()
+        {
+            const int randomBatchSize = 1000;
+            const int bestBatchSize = 100;
+            Console.WriteLine($"Computing new batch of transitions {bestBatchSize} of {randomBatchSize}");
+            var best = GetRandomTransitions(randomBatchSize).OrderBy(GetScore).Take(bestBatchSize);
+
+            var max = double.MaxValue;
+            var cnt = 0;
+            foreach (var t in best)
+            {
+                cnt += t.ComputeTransitions();
+
                 foreach (var t2 in t.Transitions)
                 {
-                    newTransitions.Add(t2);
+                    var tmp = GetScore(t2);
+                    if (tmp < max)
+                        max = tmp;
+                }
+            }
+            Console.WriteLine($"Best score was {max}, created {cnt} new transitions");
+        }
+
+        public static Transition GetRandomChild(Transition t)
+        {
+            if (t.Transitions.Count == 0)
+                return t;
+            var n = Random.Next(t.Transitions.Count);
+            return t.Transitions[n];
+        }
+
+        public static Transition GetBestChild(Transition t)
+        {
+            if (t.Transitions.Count == 0)
+                return t;
+            return t.Transitions.OrderBy(GetScore).First();
+        }
+
+        public static Transition GetRandomTransition()
+        {
+            var r = Root;
+            while (true)
+            {
+                if (r.Transitions == null)
+                {
+                    r.ComputeTransitions();
+                    return GetBestChild(r);
+                }
+                else if (r.Transitions.Count == 0)
+                {
+                    return r;
+                }
+                else
+                {
+                    r = GetRandomChild(r);
+                }
+            }
+        }
+
+        public static void ComputeTransitions()
+        {
+            const int BatchSize = 100;
+            Console.WriteLine($"Computing new batch of transitions");
+            
+            var bestScore = double.MaxValue;
+
+            for (var i = 0; i < BatchSize; ++i)
+            {
+                var t = GetRandomTransition();
+                var tmp = GetScore(t);
+                if (tmp < bestScore)
+                    bestScore = tmp;
+            }
+
+            Console.WriteLine($"Best score was {bestScore}, created {BatchSize} new transitions");
+        }
+
+        public static Transition Best()
+        {
+            Transition r = null;
+            var minScore = double.MaxValue;
+            foreach (var kv in Scores)
+            {
+                if (kv.Value < minScore)
+                {
+                    r = kv.Key;
+                    minScore = kv.Value;
                 }
             }
 
-            Transitions = newTransitions;
+            return r;
+        }
+
+        public static void Output(Transition t)
+        {
+            Console.WriteLine($"Transition has {t.Length} steps and score {GetScore(t)}");
+            Output(t.CurrentState);
+            var steps = t.GetSteps();
+            foreach (var step in steps)
+            {
+                Console.WriteLine(step);
+            }
         }
 
         public static void Main(string[] args)
@@ -68,16 +183,21 @@ namespace Champagne
             TankSizes = TankSizes.LoadFromFile(args[0], NumWines);
             var state = new State(TankSizes, NumWines);
 
-            var t = new Transition(null, state, null, null, null);
-            Transitions.Add(t);
+            Root = new Transition(null, state, null, null, null);
+            Transitions.Add(Root);
+            
+            // NOTE: used for debugging 
+            //OutputValidCombineSteps();
 
-            OutputValidCombineSteps();
-
-            for (var i = 3; i < 15; ++i)
+            for (var i = 0; i < 10; ++i)
             {
                 var sw = Stopwatch.StartNew();
-                ExpandTree(pt, i);
-                Console.WriteLine($"Found {pt.Count} steps at {i} depths");
+                Console.WriteLine($"Total transitions considered {Scores.Count}");
+                ComputeTransitions();
+
+                Console.WriteLine("Best transition:  ");
+                Output(Best());
+
                 Console.WriteLine($"Time elapsed = {sw.Elapsed}");
             }
 
