@@ -1,8 +1,13 @@
 ﻿using System.Diagnostics;
 using System.Text;
 
-namespace Champagne;
+namespace WineMixer;
 
+/// <summary>
+/// Represents the state of the tanks, which one have wine, and what the blend of wines
+/// currently is, in that tank. If we think of wine blending as a graph problem
+/// the state is a node in the graph.  
+/// </summary>
 public class State
 {
     public State(TankSizes tankSizes, int numWines)
@@ -32,13 +37,12 @@ public class State
     public Mix? this[int i]
         => Contents[i];
 
-    public IEnumerable<Step> GetValidSteps(int numWines)
+    public IEnumerable<Operation> GetValidOperations(int numWines)
     {
-        return Enumerable.Empty<Step>()
-            .Concat(GetValidAddWineSteps(numWines))
-            .Concat(GetValidTankCombineSteps())
-            //.Concat(GetValidRemoveWineSteps())
-            //.Concat(GetValidTankSplitSteps())
+        return Enumerable.Empty<Operation>()
+            .Concat(GetValidAddWineOperations(numWines))
+            .Concat(GetValidTankCombineOperations())
+            .Concat(GetValidTankSplitOperations())
             ;
     }
 
@@ -46,7 +50,7 @@ public class State
     {
         var mixA = this[tankCombine.InputA];
         var mixB = this[tankCombine.InputB];
-        if (mixA == null || mixB == null) throw new Exception("Illegal tank combine step");
+        if (mixA == null || mixB == null) throw new Exception("Illegal tank combine operation");
 
         var distA = target.DistanceFrom(mixA);
         var distB = target.DistanceFrom(mixB);
@@ -61,9 +65,9 @@ public class State
     }
 
     // Combining two tanks and producing a worse wine is a bad idea. 
-    public IEnumerable<Step> RemoveBadCombines(IEnumerable<Step> steps, Mix target)
+    public IEnumerable<Operation> RemoveBadCombines(IEnumerable<Operation> operations, Mix target)
     {
-        return steps.Where(step => step is TankCombine tc && IsBetterOrSame(tc, target));
+        return operations.Where(op => op is TankCombine tc && IsBetterOrSame(tc, target));
     }
 
     public bool IsValidTankSplit(TankSplit split)
@@ -80,26 +84,19 @@ public class State
                && IsTankOccupied(combine.InputB);
     }
 
-    public IEnumerable<TankSplit> GetValidTankSplitSteps()
+    public IEnumerable<TankSplit> GetValidTankSplitOperations()
         => TankSizes.ValidTankSplits.Where(IsValidTankSplit);
 
-    public IEnumerable<TankCombine> GetValidTankCombineSteps()
+    public IEnumerable<TankCombine> GetValidTankCombineOperations()
         => TankSizes.ValidTankCombines.Where(IsValidTankCombine);
 
-    public IEnumerable<AddWine> GetValidAddWineSteps(int numWines)
+    public IEnumerable<AddWine> GetValidAddWineOperations(int numWines)
         => TankSizes.ValidAddWines.Where(x => !IsTankOccupied(x.Tank));
 
-    public IEnumerable<RemoveWine> GetValidRemoveWineSteps()
-    {
-        for (var i = 0; i < NumTanks; ++i)
-            if (!IsTankOccupied(i))
-                yield return new RemoveWine(i);
-    }
-
-    public State Apply(Step step)
+    public State Apply(Operation operation)
     {
         var newContents = Contents.ToArray();
-        switch (step)
+        switch (operation)
         {
             case AddWine addWine:
                 newContents[addWine.Tank] = new Mix(addWine.Wine, NumWines);
@@ -122,7 +119,7 @@ public class State
                 break;
             
             default:
-                throw new ArgumentOutOfRangeException(nameof(step));
+                throw new ArgumentOutOfRangeException(nameof(operation));
         }
 
         return new State(TankSizes, newContents, NumWines);
@@ -177,29 +174,4 @@ public class State
 
         return used.Count(x => x);
     }
-
-    // TEMP: disaster
-    /*
-    public double TotalScore(Mix target)
-    {
-        var mix = (Mix?)null;
-        for (var i = 0; i < Contents.Count; ++i)
-        {
-            if (mix == null)
-                mix = Contents[i];
-            else
-            {
-                if (Contents[i] != null)
-                {
-                    mix += Contents[i] * TankSizes[i];
-                }
-            }
-        }
-
-        if (mix != null)
-            return double.MaxValue;
-
-        return mix.Normal().DistanceFrom(target);
-    }
-    */
 }

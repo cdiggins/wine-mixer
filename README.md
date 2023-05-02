@@ -1,8 +1,48 @@
 # Wine Mixing Program
 
-This is a console program that takes as input a recipe of blended wines (e.g., `WineMixer\input\recipe.txt`) , and a list of tank sizes (e.g., `WineMixer\input\tanks.txt`)
-
+This is a console program that takes as input a recipe of blended wines (e.g., `WineMixer\input\recipe.txt`), and a list of tank sizes (e.g., `WineMixer\input\tanks.txt`)
 It outputs a process for adding wines to tanks and combining tanks until the desired recipe is created. 
+
+## Requirements 
+
+* at all times, each tank must be either completely full or completely empty to prevent oxidization. 
+
+## Goal 
+
+* minimize the number of steps 
+* get as close to the recipe as possible  
+* run in a reasonable amount of time 
+
+## About the Algorithm
+
+The algorithm to blend wines is a graph optimization problem. A node in the graph is the state of all of the tanks 
+(whether it contains wine or not, and what the contents of that tank is), an edge is a transition between states. 
+
+### About Edges, Steps, Operations, Transition
+
+A step is an edge in the graph: also known as a transition. Currently, to simplify the code and minimize search states 
+each transition is treated as the combination of 1, 2, or 3 operations.
+
+An operation may be: 
+* Adding wine to a tank
+* Combining two tanks
+* Splitting a tank into two 
+
+A transition always combines two tanks, and adds wine to zero, one, or two tanks. If tanks have wine added, then
+the transition must combine wine from that tank. 
+
+## Scoring
+
+The algorithm works by assigning a score to each transition. The score function is based on the Euclidean distance of 
+the blended wines in the various tanks to the target blend, and the number of steps required. The lower the score the better
+
+## Assumptions
+
+* only two tanks can be added at a time
+* it is okay if wine is left-over and unused in some tanks 
+* wine cannot be dumped out 
+* tanks cannot be split 
+* it is better to be close to the recipe, even at the cost of more steps. 
 
 ## Example Output
 
@@ -17,34 +57,4 @@ Combine tank 7 and 11 into tank 15
 Add wine 2 to tank 14
 Combine tank 14 and 15 into tank 19
 ```
-
-## Goal 
-
-* minimize the number of steps 
-* get as close to the recipe as possible  
-* run in a reasonable amount of time 
-
-## Assumptions
-
-* only two tanks can be added at a time
-* no wine can be thrown out 
-* tanks cannot be split 
-* it is better to be close to the recipe, even at the cost of more steps. 
-
-## Requirements 
-
-* at all times, each tank must be either completely full or completely empty 
-
-## Scoring
-
-The algorithm works by assigning a score to each transition. The score function is based on the Euclidean distance of 
-the blended wines in the various tanks to the target blend, and the number of steps required. The lower the score the better
-
-## Classes
-
-Mix - A vector of values, each one representing a fraction (from 0 to 1) of the wine contained in a tank or in the recipe   
-State - Represent the contents of each tank. Each tank is assigned a Mix value representing the blend of wine, or a null value if no wine is present.  
-Step - A class that represents the combination of two tanks, the adding of wine to a tank, the splitting of a tank into two tanks, or the removal of wine from a tank 
-Transition - A transtion between states that consists of combining two tanks, and optionally adding wine to one or two barrels. 
-TankSizes - The size of each tank, used to precompute valid steps (e.g., which tanks can be combined)  
 

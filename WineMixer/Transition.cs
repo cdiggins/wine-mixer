@@ -1,10 +1,15 @@
-﻿namespace Champagne;
+﻿namespace WineMixer;
 
-// Possible transitions:
-// 1. add two wines and combine them 
-// 2. add one wine and combine it with an existing one.
-// 3. combine two existing wines 
-
+/// <summary>
+/// A transition is a combination of one or more steps to achieve a new state of blended wines.
+/// If wine blending is considered a graph problem a transition is an edge in the graph. 
+/// A transition always consists of combining two wines, and optionally adding zero, one or two wines.
+/// If wines are added a transition involves using one of those.
+/// The purpose of a transition is to reduce the complexity of the search space, and to facilitate the algorithms.
+/// A transition has a pointer to the previous transition, the previous state, and the new state created
+/// by applying the transition. It is possible to construct an invalid transition, in which case the "IsValid"
+/// flag will be false. 
+/// </summary>
 public class Transition
 {
     public Transition Prev { get; }
@@ -133,9 +138,9 @@ public class Transition
         return r;
     }
 
-    public List<Step> GetSteps()
+    public List<Operation> GetOperations()
     {
-        var stk = new Stack<Step>();
+        var stk = new Stack<Operation>();
         var t = this;
         while (t != null)
         {
@@ -151,7 +156,7 @@ public class Transition
             t = t.Prev;
         }
 
-        var r = new List<Step>();
+        var r = new List<Operation>();
         while (stk.Count > 0)
         {
             r.Add(stk.Pop());

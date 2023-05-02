@@ -1,5 +1,10 @@
-﻿namespace Champagne;
+﻿namespace WineMixer;
 
+/// <summary>
+/// A mix is a vector representing how much of each wine is stored in a tank,
+/// or that represents the target.
+/// The program aims to minimize the Euclidean distance between the target mix and the contents of a tank.
+/// </summary>
 public class Mix
 {
     public IReadOnlyList<double> Values { get; }

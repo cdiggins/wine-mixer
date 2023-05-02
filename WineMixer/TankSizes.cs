@@ -1,5 +1,9 @@
-﻿namespace Champagne;
+﻿namespace WineMixer;
 
+/// <summary>
+/// Used to store the sizes of each tanks, and the number of wines.
+/// This class also pre-computes possible steps to reduce over-computation.
+/// </summary>
 public class TankSizes
 {
     public TankSizes(IReadOnlyList<int> sizes, int numWines)

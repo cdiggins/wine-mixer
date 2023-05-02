@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Champagne
+namespace WineMixer
 {
     public class Program
     {
@@ -25,11 +25,11 @@ namespace Champagne
             return newScore;
         }
 
-        public static State ApplyRandomStep(State state)
+        public static State ApplyRandomOperation(State state)
         {
-            var steps = state.GetValidSteps(Target.NumWines).ToList();
-            var step = steps[Random.Next(steps.Count)];
-            return state.Apply(step);
+            var operations = state.GetValidOperations(Target.NumWines).ToList();
+            var operation = operations[Random.Next(operations.Count)];
+            return state.Apply(operation);
         }
 
         public static void Output(State state)
@@ -44,13 +44,13 @@ namespace Champagne
             Console.WriteLine($"Tank [{tank}] contains [{mix}]");
         }
 
-        public static void OutputValidCombineSteps()
+        public static void OutputValidCombineOperations()
         {
-            Console.WriteLine("Valid combine steps:");
+            Console.WriteLine("Valid combine operations:");
             var i = 0;
             foreach (var tc in TankSizes.ValidTankCombines)
             {
-                Console.WriteLine($"Step {i++}: {tc}");
+                Console.WriteLine($"Operation {i++}: {tc}");
             }
         }
 
@@ -170,10 +170,10 @@ namespace Champagne
         {
             Console.WriteLine($"Transition has {t.Length} steps and score {GetScore(t)}");
             Output(t.CurrentState);
-            var steps = t.GetSteps();
-            foreach (var step in steps)
+            var ops = t.GetOperations();
+            foreach (var op in ops)
             {
-                Console.WriteLine(step);
+                Console.WriteLine(op);
             }
         }
 
@@ -187,7 +187,7 @@ namespace Champagne
             Transitions.Add(Root);
             
             // NOTE: used for debugging 
-            //OutputValidCombineSteps();
+            //OutputValidCombineOperations();
 
             for (var i = 0; i < 10; ++i)
             {
