@@ -187,7 +187,7 @@ namespace WineMixer
             Transitions.Add(Root);
             
             // NOTE: used for debugging 
-            //OutputValidCombineOperations();
+            OutputValidCombineOperations();
 
             for (var i = 0; i < 10; ++i)
             {

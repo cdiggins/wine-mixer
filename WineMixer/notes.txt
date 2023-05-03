@@ -51,3 +51,47 @@ I am considering transitions that have no hope ... maybe deleting some of them w
 I need to not sort so much. 
 Splitting would be good. 
 My current system is not good. 
+
+//==
+
+TODO: 
+* Multiple tank combines. 
+
+//== 
+
+What is the distance between two wines. 
+
+What happens when I add two wines. 
+* Adding a worse wine to another wine, makes it worse.
+* However, it may be desirable to have a small amount of this worse wine for mixing purposes. 
+
+If I have the perfect wine what happens?
+* Adding a non-perfect wine makes it worse
+
+Somehow considering the sizes of the tanks for everything is important. 
+* Maybe there is a score I can give a state based on: 
+	* How much of all the wine it has. 
+
+The questions are: 
+* Can I combine any more wines? 
+
+What if I:
+* Separate the way that wines are combined, from the actual wines that are combined. 
+
+All of a sudden we can consider different possibilities. 
+
+The possibilities however get a bit complicated. 
+
+This would massively reduce the search space. 
+
+Given a list of tanks, what are the valid combination sizes. 
+Given the valid combination sizes, what are the kinds of blends I can make. 
+
+//==
+
+The number of possible sets gets big very fast. 
+
+However, I suspect there is a lot of repetition. 
+
+Note that if two tanks are the same size, then they have the same 
+tank configuration. 
