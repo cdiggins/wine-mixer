@@ -3,31 +3,38 @@
 /// <summary>
 /// A mix is a vector representing how much of each wine is stored in a tank,
 /// or that represents the target.
-/// The program aims to minimize the Euclidean distance between the target mix and the contents of a tank.
+/// The program aims to minimize the Euclidean distance between the target mix and
+/// the contents of a tank.
 /// </summary>
 public class Mix
 {
-    public IReadOnlyList<double> Values { get; }
-    public int NumWines => Values.Count;
+    public Mix(params double[] values)
+        : this((IReadOnlyList<double>)values)
+    { }
 
-    public double DistanceFrom(Mix? other)
+
+    public Mix(IReadOnlyList<double> values)
     {
-        if (other == null)
-            return double.MaxValue;
-        var sumSqrDeltas = 0.0;
-        for (var i = 0; i < Values.Count; i++)
-        {
-            sumSqrDeltas += Math.Pow(Values[i] - other.Values[i], 2);
-        }
-        return Math.Sqrt(sumSqrDeltas);
+        Values = values;
     }
 
+    public IReadOnlyList<double> Values { get; }
+    public int Count => Values.Count;
+
+    public double Distance(Mix? other) 
+        => other == null 
+            ? double.MaxValue 
+            : (other - this).GetLength();
+
     public static Mix Add(Mix mixA, Mix mixB)
+        => mixA.Lerp(mixB);
+
+    public static Mix Subtract(Mix mixA, Mix mixB)
     {
-        var tmp = new double[mixA.NumWines];
-        for (var i = 0; i < mixA.NumWines; ++i)
+        var tmp = new double[mixA.Count];
+        for (var i = 0; i < mixA.Count; ++i)
         {
-            tmp[i] = mixA.Values[i] + mixB.Values[i];
+            tmp[i] = mixA.Values[i] - mixB.Values[i];
         }
 
         return new(tmp);
@@ -36,13 +43,16 @@ public class Mix
     public static Mix operator +(Mix a, Mix b)
         => Add(a, b);
 
+    public static Mix operator -(Mix a, Mix b)
+        => Subtract(a, b);
+
     public static Mix operator *(Mix mix, double x)
         => Multiply(mix, x);
 
     public static Mix Multiply(Mix mix, double x)
     {
-        var tmp = new double[mix.NumWines];
-        for (var i = 0; i < mix.NumWines; ++i)
+        var tmp = new double[mix.Count];
+        for (var i = 0; i < mix.Count; ++i)
         {
             tmp[i] = mix.Values[i] * x;
         }
@@ -50,42 +60,17 @@ public class Mix
         return new(tmp);
     }
 
-    public Mix(IReadOnlyList<double> values)
-        => Values = values;
-
-    public static Mix Normalize(Mix mix)
-        => mix * (1.0 / mix.GetLength());
-
-    public Mix Normal()
-        => Normalize(this);
-
     public static Mix Combine(Mix m1, double w1, Mix m2, double w2)
-    {
-        var tmp = new double[m1.NumWines];
-        var sum = w1 + w2;
-        for (var i = 0; i < m1.NumWines; ++i)
-        {
-            tmp[i] = ((m1.Values[i] * w1) + (m2.Values[i] * w2)) / sum;
-        }
-
-        return new Mix(tmp);
-    }
+        => m1.Lerp(m2, w2 / w1 + w2);
 
     public double GetLength()
     {
         var sumSqrDeltas = 0.0;
         for (var i = 0; i< Values.Count; i++)
         {
-            sumSqrDeltas += Math.Pow(Values[i], 2);
+            sumSqrDeltas += Values[i] * Values[i];
         }
         return Math.Sqrt(sumSqrDeltas);
-    }
-
-    public Mix(int i, int numWines)
-    {
-        var tmp = new double[numWines]; 
-        tmp[i] = 1.0;
-        Values = tmp;
     }
 
     public override string ToString()
@@ -108,5 +93,23 @@ public class Mix
             r.Add(amt);
         }
         return new Mix(r);
+    }
+
+    public static Mix CreateFromIndex(int index, int numWines)
+    {
+        var tmp = new double[numWines];
+        tmp[index] = 1.0;
+        return new Mix(tmp);
+    }
+
+    public Mix Lerp(Mix other, double amount = 0.5)
+    {
+        var tmp = new double[Count];
+        for (var i = 0; i < Count; ++i)
+        {
+            tmp[i] = (Values[i] * 1.0 - amount) + (other.Values[i] * amount);
+        }
+
+        return new Mix(tmp);
     }
 }

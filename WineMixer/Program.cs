@@ -7,7 +7,7 @@ namespace WineMixer
         public static Random Random = new Random();
         public static Mix Target;
         public static TankSizes TankSizes;
-        public static int NumWines => Target.NumWines;
+        public static int NumWines => Target.Count;
         public static Transition Root;
         public static Dictionary<Transition, double> Scores = new ();
         public static List<Transition> Transitions = new ();
@@ -27,7 +27,7 @@ namespace WineMixer
 
         public static State ApplyRandomOperation(State state)
         {
-            var operations = state.GetValidOperations(Target.NumWines).ToList();
+            var operations = state.GetValidOperations().ToList();
             var operation = operations[Random.Next(operations.Count)];
             return state.Apply(operation);
         }
@@ -73,42 +73,11 @@ namespace WineMixer
             return tmp.Take(n).ToList();
         }
 
-        public static void OldComputeTransitions()
-        {
-            const int randomBatchSize = 1000;
-            const int bestBatchSize = 100;
-            Console.WriteLine($"Computing new batch of transitions {bestBatchSize} of {randomBatchSize}");
-            var best = GetRandomTransitions(randomBatchSize).OrderBy(GetScore).Take(bestBatchSize);
-
-            var max = double.MaxValue;
-            var cnt = 0;
-            foreach (var t in best)
-            {
-                cnt += t.ComputeTransitions();
-
-                foreach (var t2 in t.Transitions)
-                {
-                    var tmp = GetScore(t2);
-                    if (tmp < max)
-                        max = tmp;
-                }
-            }
-            Console.WriteLine($"Best score was {max}, created {cnt} new transitions");
-        }
-
-        public static Transition GetRandomChild(Transition t)
-        {
-            if (t.Transitions.Count == 0)
-                return t;
-            var n = Random.Next(t.Transitions.Count);
-            return t.Transitions[n];
-        }
-
         public static Transition GetBestChild(Transition t)
         {
-            if (t.Transitions.Count == 0)
+            if (t.GetOrComputeTransitions().Count == 0)
                 return t;
-            return t.Transitions.OrderBy(GetScore).First();
+            return t.GetOrComputeTransitions().OrderBy(GetScore).First();
         }
 
         public static Transition GetRandomTransition()
@@ -116,18 +85,15 @@ namespace WineMixer
             var r = Root;
             while (true)
             {
-                if (r.Transitions == null)
-                {
-                    r.ComputeTransitions();
-                    return GetBestChild(r);
-                }
-                else if (r.Transitions.Count == 0)
+                var ts = r.GetOrComputeTransitions();
+                if (ts.Count == 0)
                 {
                     return r;
                 }
                 else
                 {
-                    r = GetRandomChild(r);
+                    var i = Random.Next(ts.Count);
+                    r = ts[i];
                 }
             }
         }

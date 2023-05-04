@@ -13,11 +13,13 @@ public class TankSizes
         ValidTankSplits = ComputeValidTankSplits().ToList();
         ValidTankCombines = ComputeValidTankCombines().ToList();
         ValidAddWines = ComputeAddWines().ToList();
+        Volume = Sizes.Sum();
     }
 
     public IReadOnlyList<int> Sizes { get; }
-    public int NumTanks => Sizes.Count;
+    public int Count => Sizes.Count;
     public int NumWines { get; }
+    public int Volume { get; }
 
     public int this[int i]
         => Sizes[i];
@@ -31,9 +33,9 @@ public class TankSizes
     // Complexity O(N^3) where N = number of tanks, but called only once 
     public IEnumerable<TankSplit> ComputeValidTankSplits()
     {
-        for (var i = 0; i < NumTanks; ++i)
-        for (var j = i + 1; j < NumTanks; ++j)
-        for (var k = 0; k < NumTanks; ++k)
+        for (var i = 0; i < Count; ++i)
+        for (var j = i + 1; j < Count; ++j)
+        for (var k = 0; k < Count; ++k)
         {
             if (i != j && i != k && j != k)
             {
@@ -47,9 +49,9 @@ public class TankSizes
     // Complexity O(N^3) where N = number of tanks, but called only once 
     public IEnumerable<TankCombine> ComputeValidTankCombines()
     {
-        for (var i = 0; i < NumTanks; ++i)
-        for (var j = i + 1; j < NumTanks; ++j)
-        for (var k = 0; k < NumTanks; ++k)
+        for (var i = 0; i < Count; ++i)
+        for (var j = i + 1; j < Count; ++j)
+        for (var k = 0; k < Count; ++k)
         {
             if (i != j && i != k && j != k)
             {
@@ -62,7 +64,7 @@ public class TankSizes
 
     public IEnumerable<AddWine> ComputeAddWines()
     {
-        for (var i = 0; i < NumTanks; ++i)
+        for (var i = 0; i < Count; ++i)
             for (var j = 0; j < NumWines; ++j)
                 yield return new AddWine(i, j);
     }

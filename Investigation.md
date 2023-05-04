@@ -97,13 +97,13 @@ possible input tanks. For example consider the following tanks.
 
 ```
 A=10
-	B=5
-		D=4
-		E=1
-	C=5
-		F=2
-		G=3
-	H=6
+B=5
+	D=4
+	E=1
+C=5
+	F=2
+	G=3
+H=6
 ```
 
 Tank A can be fed by tanks B and C, or by tanks D and H. 
@@ -238,6 +238,209 @@ variety of wines brings us overall closer to the goal.
 
 * Given two tanks of size X and having wines A and B
 * Blending them should give a wine blend C that is closer to the target than either A or B. 
+
+## New Observation: Vector Difference 
+
+If we consider the blend of wine in a tank to be a vector. The goal is to 
+get that wine as close to another. When combining wines, we are doing 
+vector addition. So in effect we want to create a new wine blend that is 
+a delta between the current best wine, and the target wine. 
+
+So then at each stage we are maximizing for that. 
+
+This means we no longer will get trapped in a local maxima. 
+
+Some small questions remain: 
+* what wine do I put in what tank first? 
+* give two wine blends that exist, do I maximize A or B? 
+* What if I create a wine blend that represents a delta, but it can't be added.
+
+Putting the most desired wine (the one with the highest percentage) in the 
+smallest tank first, doesn't make sense, because then you have to put the second most 
+desired wine in the next larger tank, which throws off the proportions. 
+
+## Looking at Tanks in Isolation versus Looking at Blend Possibilities
+
+It seems pretty clear that looking at a single tank does not provide 
+enough information. We almost want to just look at the possibility of blends. 
+
+So to choose which wines to add, we need to start from the list of all possible 
+blends that we can make, and figure out which one makes the most sense 
+and is closest to the desired delta. 
+
+So we can compute scores based on a difference from a delta. 
+
+## Weighted Vector Difference (Lerp)
+
+The subtraction hypothesis makes sense if the target wine and the new wine are 
+blended in equal amounts. However, they can be blended in different amounts.
+
+So for example: my best wine blend might be in tank A50L which can be blended
+with tank B50L. However, it might also be able to be blended with tank B25L 
+in which case the target vector would be half of the original.
+
+## Scoring? 
+
+So this raises a predicament vis-a-vis scoring of deltas. 
+The purpose of scoring a delta is to help us construct new wines for blending. 
+I can blend the delta into any tank I want: which one should I prefer. 
+
+In general the scoring can help with choosing a wine, but not so much 
+with choosing a tank. 
+
+## Short Search then Greedy 
+
+One idea is to do an exhaustive short search (e.g. two deep) of all of the possibilities and then choosing the best operation. 
+
+We can then re-evaluate: maybe the next choice is a little different 
+than we expect. This is like chess: we search as deep as we can, 
+and continue to re-evaluate. 
+
+Note that we know that vectors are additive. Two delta vectors can add up to 
+become helpful. 
+
+Looking at N tanks, some are going to be deltas. Is there something we can say 
+about a delta? Does it look like a solution locally? 
+
+## A Ray, not a Vector? 
+
+If we think about a delta as a vector in 3 space, it can point away from 
+the best solution. So evaluating it on its own vis a vis the target point 
+doesn't make much sense. 
+
+If we consider a delta as a ray (a point and a vector), then we know it  
+points to the target wine. 
+
+## Perfect Vectors 
+
+At each state, we have a number of tanks. Each tank A (with wine) 
+can be combined with another tank B (empty). Tank B has a theoreticaly 
+perfect vector that is easily computed (via reverse interpolation)
+which when combined with A would give us the perfect wine.  
+
+So changing it around, every empty tank has a perfect vector for every 
+occupied tank. 
+
+## Idea: Throwing out Wine even if you cant. 
+
+Assuming we can't (or don't want to) throw out wine, and that the problem doesn't 
+have an optimal sub-problem, the greedy approach might still work , if we 
+allow wine to be thrown out. We can then patch the operation path later (just
+ don't ) add the wines that got removed. This might allows us additional 
+ flexibility in traversing the solution space. 
+
+## Perfect Vectors and Transitions 
+
+Even if we know the perfect vectors for all the tanks, choosing 
+what wine to add to what tank is still unclear. 
+
+As mentioned before: looking at wines and tanks in isolation very likely won't work. 
+
+A transition possibility:
+
+* Add two wines to empty tanks. 
+* Combine them into a new empty tank. 
+* Now use that for one of the known "perfect vector". 
+
+This can be evaluated for each transition, and we choose the transition that it 
+closest to a perfect vector. 
+
+What if we choose a transition, but don't apply it immediately. 
+Instead we just do one operation (e.g. add the first wine)
+This is like the idea of a short search, make best move re-evaluate. 
+
+In theory at this point we are a little bit closer to making a better wine. 
+We have a bit more of the desired wine in the system or we combined some wines to help. 
+
+Maybe after making this step we look at the transitions again and we have 
+a better idea. 
+
+There is even a possibility that this always brings us to the best solution. 
+
+## Alternative: Evaluating Two Transitions 
+
+Would this not provide the same result as evaluating two transitions deep? 
+Looking at the best wine, and not the delta vector? Or is it kind of like evaluating
+ a transition + combine, and choosing that. 
+
+The thing is that just looking at the wines in the system doesn't tell us about 
+the wines we need. The hypothtesis is that the delta vector helps in choosing 
+missing wines. 
+
+This is not clear. 
+
+## Side Note: Evaluating the Entire System (Graph)
+
+Looking at the entire system and evaluating it is hard.
+
+* Do we just look at the best wine blend? 
+* Do we look at the difference vectors? 
+* The more wines in the system the easier it is to make blends. 
+* The fewer tanks used, the easier it is to make new blends  
+
+## Perfect Deltas and Delta Deltas 
+
+A perfect delta is a wine blend that when combined with an occupied tank 
+will bring it directly to the desired wine. It is computed as the difference 
+from the target blend to the blend in the occupied tank. 
+
+Each occupied tank has a set of perfect deltas: one for each empty tank it can be 
+combined with. The empty tank itself also a list of perfect deltas and the occupied 
+tanks that it could be. 
+
+Optionally: these deltas can be associated with the "combining" tanks. Those tanks then 
+have two (or more) feeders. The delta   
+
+In addition an empty tank can have one or more delta-deltas. A delta-delta 
+is the vector required in an empty feeder tank to combine with a non-empty feeder tank 
+to make the empty tank become a delta. 
+
+This process could in theory continue until we get to the smallest tanks. 
+
+## Looking at Distance from Target versus and Distance from Delta
+
+Is there a difference between the distance from target and the distance from delta? 
+It seems that minimizing distances is like minimizing error. The question is,
+which one introduces the new best wine. 
+
+## Experiment 
+
+At this point an experiment will be done to:
+* compute all possible transitions. 
+* output how many there are at each step. 
+* Allow serialization of a state (maybe?)
+* choose an operation based on which transmission minimizes distance 
+from a delta or target. 
+* output the deltas
+* output the distances of each state from the target. 
+
+## Some Confusion about Euclidean Distance and Vector Length
+
+If a wine blend is considered a vector in n dimensional space, the sum of the components 
+must add up to one. This does not mean that the vector length is also one. 
+
+This has lead to some confusion about how to compute scores. Is it correct that two 
+wines are indeed closer in flavor profile is the euclidean distance is the same? 
+
+In order to compare two vectors, we want the length of the distsance. To do this
+the proportions must be normalized. However, a Euclidean normalization might not be 
+appropriate. Instead we may want to simply divide by the sum of components. 
+
+## Distances
+
+Using Euclidean distance seems to still be a valid way forward. 
+
+## Maximizing at Each Step
+
+At each step we can either find:
+1. the best wine mix, or 
+2. the best delta. 
+
+Finding a best delta only makes sense if we can get the delta into the final target. 
+
+All things equal we would want the best wine in the smallest container. Maybe. 
+
+
 
 
 

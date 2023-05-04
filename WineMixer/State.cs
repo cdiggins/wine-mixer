@@ -12,7 +12,7 @@ public class State
 {
     public State(TankSizes tankSizes, int numWines)
         : this(tankSizes, Enumerable
-            .Range(0, tankSizes.NumTanks)
+            .Range(0, tankSizes.Count)
             .Select(_ => (Mix?)null)
             .ToArray(), numWines)
     {
@@ -26,7 +26,7 @@ public class State
         NumWines = numWines;
     }
 
-    public int NumTanks => TankSizes.NumTanks;
+    public int NumTanks => TankSizes.Count;
     public int NumWines { get; }
     public TankSizes TankSizes { get; }
     public IReadOnlyList<Mix?> Contents { get; }
@@ -37,10 +37,10 @@ public class State
     public Mix? this[int i]
         => Contents[i];
 
-    public IEnumerable<Operation> GetValidOperations(int numWines)
+    public IEnumerable<Operation> GetValidOperations()
     {
         return Enumerable.Empty<Operation>()
-            .Concat(GetValidAddWineOperations(numWines))
+            .Concat(GetValidAddWineOperations(TankSizes.NumWines))
             .Concat(GetValidTankCombineOperations())
             .Concat(GetValidTankSplitOperations())
             ;
@@ -52,14 +52,14 @@ public class State
         var mixB = this[tankCombine.InputB];
         if (mixA == null || mixB == null) throw new Exception("Illegal tank combine operation");
 
-        var distA = target.DistanceFrom(mixA);
-        var distB = target.DistanceFrom(mixB);
+        var distA = target.Distance(mixA);
+        var distB = target.Distance(mixB);
         
         var tmp = Apply(tankCombine);
         var newMix = tmp[tankCombine.Output];
         if (newMix == null) throw new Exception("Internal error, combined mix didn't do anything");
 
-        var newDist = target.DistanceFrom(newMix);
+        var newDist = target.Distance(newMix);
 
         return newDist <= distA || newDist <= distB;
     }
@@ -93,23 +93,23 @@ public class State
     public IEnumerable<AddWine> GetValidAddWineOperations(int numWines)
         => TankSizes.ValidAddWines.Where(x => !IsTankOccupied(x.Tank));
 
-    public State Apply(Operation operation)
+    public Mix CombineResult(int a, int b)
+        => Mix.Combine(Contents[a], TankSizes[a], Contents[b], TankSizes[b]);
+
+    public State Apply(Operation? operation)
     {
+        if (operation == null) return this;
         var newContents = Contents.ToArray();
         switch (operation)
         {
             case AddWine addWine:
-                newContents[addWine.Tank] = new Mix(addWine.Wine, NumWines);
+                newContents[addWine.Tank] = Mix.CreateFromIndex(addWine.Wine, NumWines);
                 break;
 
             case TankCombine tankCombine:
                 newContents[tankCombine.InputA] = null;
                 newContents[tankCombine.InputB] = null;
-                newContents[tankCombine.Output] = Mix.Combine(
-                    Contents[tankCombine.InputA],
-                    TankSizes[tankCombine.InputA],
-                    Contents[tankCombine.InputB],
-                    TankSizes[tankCombine.InputB]);
+                newContents[tankCombine.Output] = CombineResult(tankCombine.InputA, tankCombine.InputB);
                 break;
 
             case TankSplit tankSplit:
@@ -146,7 +146,7 @@ public class State
         var index = 0;
         for (var i = 1; i < NumTanks; ++i)
         {
-            var d2 = target.DistanceFrom(this[i]);
+            var d2 = target.Distance(this[i]);
             if (d2 < d)
             {
                 d = d2;

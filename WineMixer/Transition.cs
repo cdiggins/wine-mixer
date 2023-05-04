@@ -1,4 +1,6 @@
-﻿namespace WineMixer;
+﻿using System.Collections.Generic;
+
+namespace WineMixer;
 
 /// <summary>
 /// A transition is a combination of one or more steps to achieve a new state of blended wines.
@@ -32,7 +34,8 @@ public class Transition
         }
     }
 
-    public IReadOnlyList<Transition> Transitions { get; set; }
+    private IReadOnlyList<Transition> _transitions;
+    
     public bool IsValid { get;}
 
     public Transition(Transition? prev, State state, TankCombine? combine, AddWine? addWineA, AddWine? addWineB)
@@ -100,10 +103,9 @@ public class Transition
         return PrevState.IsTankOccupied(tank) || AddWineA?.Tank == tank || AddWineB?.Tank == tank;
     }
 
-    public int ComputeTransitions()
+    public IReadOnlyList<Transition> GetOrComputeTransitions()
     {
-        Transitions ??= GetPossibleTransitions();
-        return Transitions.Count;
+        return _transitions ??= GetPossibleTransitions();
     }
 
     public bool IsBetterOrSame(Mix target)
