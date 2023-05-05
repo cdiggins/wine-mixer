@@ -114,8 +114,9 @@ public static class Tests
     public static double ScoreUsingBestAndAverage(State state)
         => state.BestMixDistance + state.AverageMixDistance / 1000;
 
+    // NOTE: added heuristic so that the best score is even better if in a smaller container. 
     public static double ScoreUsingBest(State state)
-        => state.BestMixDistance;
+        => state.BestMixDistance + (state.BestMix?.Sum ?? 0) / 1000;
 
     public static double ScoreUsingCombineTree(State state)
     {

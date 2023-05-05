@@ -66,9 +66,8 @@ public class State
     public IEnumerable<Operation> GetValidOperations() =>
         Enumerable.Empty<Operation>()
             .Concat(GetValidAddWineOperations())
-            .Concat(GetValidTankCombineOperations());
-
-    //.Concat(GetValidTankSplitOperations())
+            .Concat(GetValidTankCombineOperations())
+            .Concat(GetValidTankSplitOperations());
     public double TargetDistance(Mix? mix) 
         => Configuration.TargetDistance(mix);
 

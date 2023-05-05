@@ -94,4 +94,50 @@ The number of possible sets gets big very fast.
 However, I suspect there is a lot of repetition. 
 
 Note that if two tanks are the same size, then they have the same 
-tank configuration. 
+tank configuration
+
+//==
+
+Found 0 immediate operations
+Found 0 states reachable via combines only
+From 0 operations chose 
+State 1814 depth=14 volume=102 tanks=10/10
+Target is (0.1, 0.15, 0.25, 0.5)
+Best mix is (0, 0.302, 0.302, 0.905) of distance 0.222165
+Average mix is (0.922, 0.04, 0.04, 0.383) of distance 0.990168
+Tank 0 has size 1 and contains (0, 0, 0, 1) of distance 0.545
+Tank 1 has size 2 and contains (0, 0, 0, 1) of distance 0.545
+Tank 2 has size 3 and contains (1, 0, 0, 0) of distance 1.288
+Tank 3 has size 5 and contains (1, 0, 0, 0) of distance 1.288
+Tank 4 has size 8 and contains (1, 0, 0, 0) of distance 1.288
+Tank 5 has size 10 and contains (1, 0, 0, 0) of distance 1.288
+Tank 6 has size 13 and contains (1, 0, 0, 0) of distance 1.288
+Tank 7 has size 15 and contains (1, 0, 0, 0) of distance 1.288
+Tank 8 has size 20 and contains (1, 0, 0, 0) of distance 1.288
+Tank 9 has size 25 and contains (0, 0.302, 0.302, 0.905) of distance 0.222
+
+//==
+
+Introducing Tank Splits plus optimization to get best in smallest tank and things got even better:
+
+Found 0 immediate operations
+Found 0 states reachable via combines only
+From 0 operations chose 
+State 1794 depth=16 volume=102 tanks=10/10
+Target is (0.1, 0.15, 0.25, 0.5)
+Best mix is (0.255, 0.17, 0.426, 0.851) of distance 0.120386
+Average mix is (0.974, 0.02, 0.05, 0.218) of distance 1.114998
+Tank 0 has size 1 and contains (0, 0, 0, 1) of distance 0.545
+Tank 1 has size 2 and contains (1, 0, 0, 0) of distance 1.288
+Tank 2 has size 3 and contains (1, 0, 0, 0) of distance 1.288
+Tank 3 has size 5 and contains (1, 0, 0, 0) of distance 1.288
+Tank 4 has size 8 and contains (1, 0, 0, 0) of distance 1.288
+Tank 5 has size 10 and contains (1, 0, 0, 0) of distance 1.288
+Tank 6 has size 13 and contains (1, 0, 0, 0) of distance 1.288
+Tank 7 has size 15 and contains (1, 0, 0, 0) of distance 1.288
+Tank 8 has size 20 and contains (0.255, 0.17, 0.426, 0.851) of distance 0.12
+Tank 9 has size 25 and contains (1, 0, 0, 0) of distance 1.288
+
+Found 0 immediate operations
+Found 0 states reachable via combines only
+From 0 operations chose 
