@@ -10,26 +10,49 @@ namespace WineMixer;
 /// </summary>
 public class State
 {
-    public State(TankSizes tankSizes, int numWines)
-        : this(tankSizes, Enumerable
-            .Range(0, tankSizes.Count)
+    public State(Configuration configuration)
+        : this(configuration, Enumerable
+            .Range(0, configuration.Count)
             .Select(_ => (Mix?)null)
-            .ToArray(), numWines)
+            .ToArray(), 0)
     {
     }
 
-    public State(TankSizes tankSizes, IReadOnlyList<Mix?> contents, int numWines)
+    public State(Configuration configuration, IReadOnlyList<Mix?> contents, int depth)
     {
-        Debug.Assert(tankSizes.Sizes.Count == contents.Count);
-        TankSizes = tankSizes;
+        Debug.Assert(configuration.Sizes.Count == contents.Count);
+        Configuration = configuration;
         Contents = contents;
-        NumWines = numWines;
+        Depth = depth;
+        StateId = _nextStateId++;
+        var i = 0;
+        foreach (var mix in Contents)
+        {
+            if (mix != null)
+            {
+                UsedTanks++;
+                Volume += GetTankSize(i);
+            }
+            i++;
+        }
+
+        AverageMix = Contents.Average();
+        AverageMixDistance = TargetDistance(AverageMix);
+        BestMix = Contents.MinBy(TargetDistance);
+        BestMixDistance = TargetDistance(BestMix);
     }
 
-    public int NumTanks => TankSizes.Count;
-    public int NumWines { get; }
-    public TankSizes TankSizes { get; }
+    private static int _nextStateId;
+
+    public int NumTanks => Configuration.Count;
+    public int NumWines => Configuration.NumWines;
+    public Configuration Configuration { get; }
     public IReadOnlyList<Mix?> Contents { get; }
+    public Mix Target => Configuration.Target;
+    public int Depth { get; }
+    public int StateId { get; }
+    public double Volume { get; }
+    public int UsedTanks { get; }
 
     public bool IsTankOccupied(int i) 
         => Contents[i] != null;
@@ -37,64 +60,39 @@ public class State
     public Mix? this[int i]
         => Contents[i];
 
-    public IEnumerable<Operation> GetValidOperations()
-    {
-        return Enumerable.Empty<Operation>()
-            .Concat(GetValidAddWineOperations(TankSizes.NumWines))
-            .Concat(GetValidTankCombineOperations())
-            .Concat(GetValidTankSplitOperations())
-            ;
-    }
+    public double GetTankSize(int i)
+        => Configuration[i];
 
-    public bool IsBetterOrSame(TankCombine tankCombine, Mix target)
-    {
-        var mixA = this[tankCombine.InputA];
-        var mixB = this[tankCombine.InputB];
-        if (mixA == null || mixB == null) throw new Exception("Illegal tank combine operation");
+    public IEnumerable<Operation> GetValidOperations() =>
+        Enumerable.Empty<Operation>()
+            .Concat(GetValidAddWineOperations())
+            .Concat(GetValidTankCombineOperations());
 
-        var distA = target.Distance(mixA);
-        var distB = target.Distance(mixB);
-        
-        var tmp = Apply(tankCombine);
-        var newMix = tmp[tankCombine.Output];
-        if (newMix == null) throw new Exception("Internal error, combined mix didn't do anything");
+    //.Concat(GetValidTankSplitOperations())
+    public double TargetDistance(Mix? mix) 
+        => Configuration.TargetDistance(mix);
 
-        var newDist = target.Distance(newMix);
+    public bool IsValidTankSplit(TankSplit split) =>
+        IsTankOccupied(split.Input) 
+        && !IsTankOccupied(split.OutputA) 
+        && !IsTankOccupied(split.OutputB);
 
-        return newDist <= distA || newDist <= distB;
-    }
-
-    // Combining two tanks and producing a worse wine is a bad idea. 
-    public IEnumerable<Operation> RemoveBadCombines(IEnumerable<Operation> operations, Mix target)
-    {
-        return operations.Where(op => op is TankCombine tc && IsBetterOrSame(tc, target));
-    }
-
-    public bool IsValidTankSplit(TankSplit split)
-    {
-        return IsTankOccupied(split.Input) 
-               && !IsTankOccupied(split.OutputA) 
-               && !IsTankOccupied(split.OutputB);
-    }
-
-    public bool IsValidTankCombine(TankCombine combine)
-    {
-        return !IsTankOccupied(combine.Output)
-               && IsTankOccupied(combine.InputA)
-               && IsTankOccupied(combine.InputB);
-    }
+    public bool IsValidTankCombine(TankCombine combine) =>
+        !IsTankOccupied(combine.Output)
+        && IsTankOccupied(combine.InputA)
+        && IsTankOccupied(combine.InputB);
 
     public IEnumerable<TankSplit> GetValidTankSplitOperations()
-        => TankSizes.ValidTankSplits.Where(IsValidTankSplit);
+        => Configuration.ValidTankSplits.Where(IsValidTankSplit);
 
     public IEnumerable<TankCombine> GetValidTankCombineOperations()
-        => TankSizes.ValidTankCombines.Where(IsValidTankCombine);
+        => Configuration.ValidTankCombines.Where(IsValidTankCombine);
 
-    public IEnumerable<AddWine> GetValidAddWineOperations(int numWines)
-        => TankSizes.ValidAddWines.Where(x => !IsTankOccupied(x.Tank));
+    public IEnumerable<AddWine> GetValidAddWineOperations()
+        => Configuration.ValidAddWines.Where(x => !IsTankOccupied(x.Tank));
 
     public Mix CombineResult(int a, int b)
-        => Mix.Combine(Contents[a], TankSizes[a], Contents[b], TankSizes[b]);
+        => Contents[a]! + Contents[b]!;
 
     public State Apply(Operation? operation)
     {
@@ -103,7 +101,7 @@ public class State
         switch (operation)
         {
             case AddWine addWine:
-                newContents[addWine.Tank] = Mix.CreateFromIndex(addWine.Wine, NumWines);
+                newContents[addWine.Tank] = Mix.CreateFromIndex(addWine.Wine, NumWines) * GetTankSize(addWine.Tank);
                 break;
 
             case TankCombine tankCombine:
@@ -122,56 +120,32 @@ public class State
                 throw new ArgumentOutOfRangeException(nameof(operation));
         }
 
-        return new State(TankSizes, newContents, NumWines);
+        return new State(Configuration, newContents, Depth+1);
     }
 
-    public override string ToString()
+    public StringBuilder BuildString(StringBuilder sb, bool details = true)
     {
-        var sb = new StringBuilder();
-        for (var i = 0; i < NumTanks; ++i)
+        sb.AppendLine($"State {StateId} depth={Depth} volume={Volume} tanks={UsedTanks}/{NumTanks}");
+        if (details)
         {
-            sb.AppendLine($"Tank {i} has size {TankSizes[i]} and contains {Contents[i]}");
-        }
-        return sb.ToString();
-    }
-
-    public double BestDistance(Mix target)
-    {
-        return BestTank(target).Item2;
-    }
-
-    public (int, double, Mix) BestTank(Mix target)
-    {
-        var d = double.MaxValue;
-        var index = 0;
-        for (var i = 1; i < NumTanks; ++i)
-        {
-            var d2 = target.Distance(this[i]);
-            if (d2 < d)
+            sb.AppendLine($"Best mix is {BestMix} of distance {BestMixDistance:0.######}");
+            sb.AppendLine($"Average mix is {AverageMix} of distance {AverageMixDistance:0.######}");
+            for (var i = 0; i < NumTanks; ++i)
             {
-                d = d2;
-                index = i;
+                var t = Contents[i];
+                if (t != null)
+                    sb.AppendLine($"Tank {i} has size {Configuration[i]} and contains {t.Normal} of distance {TargetDistance(t):0.###}"); else 
+                    sb.AppendLine($"Tank {i} has size {Configuration[i]} and is empty");
             }
         }
-
-        return (index, d, this[index]);  
+        return sb;
     }
 
-    public int UsedWines()
-    {
-        var used = new bool[NumWines];
-        foreach (var mix in Contents)
-        {
-            if (mix != null)
-            {
-                for (var i = 0; i < mix.Values.Count; ++i)
-                {
-                    if (mix.Values[i] > 0)
-                        used[i] = true;
-                }
-            }
-        }
+    public override string ToString() 
+        => BuildString(new StringBuilder()).ToString();
 
-        return used.Count(x => x);
-    }
+    public Mix? AverageMix { get; }
+    public double AverageMixDistance { get; }
+    public Mix? BestMix { get; }
+    public double BestMixDistance { get; }
 }

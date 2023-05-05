@@ -12,22 +12,38 @@ public class Mix
         : this((IReadOnlyList<double>)values)
     { }
 
-
     public Mix(IReadOnlyList<double> values)
     {
         Values = values;
+        Sum = Values.Sum();
+        var sumSqrs = 0.0;
+        for (var i = 0; i < Values.Count; i++)
+        {
+            sumSqrs += Values[i] * Values[i];
+        }
+        Length = Math.Sqrt(sumSqrs);
     }
 
     public IReadOnlyList<double> Values { get; }
     public int Count => Values.Count;
+    public double Sum { get; } 
+    public double Length { get; }
 
     public double Distance(Mix? other) 
         => other == null 
             ? double.MaxValue 
-            : (other - this).GetLength();
+            : (other - this).Length;
 
     public static Mix Add(Mix mixA, Mix mixB)
-        => mixA.Lerp(mixB);
+    {
+        var tmp = new double[mixA.Count];
+        for (var i = 0; i < mixA.Count; ++i)
+        {
+            tmp[i] = mixA.Values[i] + mixB.Values[i];
+        }
+
+        return new(tmp);
+    }
 
     public static Mix Subtract(Mix mixA, Mix mixB)
     {
@@ -49,6 +65,12 @@ public class Mix
     public static Mix operator *(Mix mix, double x)
         => Multiply(mix, x);
 
+    public static Mix operator /(Mix mix, double x)
+        => Multiply(mix, 1.0 / x);
+
+    public Mix Normal 
+        => Length.AlmostEquals(0) ? this : this / Length;
+
     public static Mix Multiply(Mix mix, double x)
     {
         var tmp = new double[mix.Count];
@@ -60,22 +82,9 @@ public class Mix
         return new(tmp);
     }
 
-    public static Mix Combine(Mix m1, double w1, Mix m2, double w2)
-        => m1.Lerp(m2, w2 / w1 + w2);
-
-    public double GetLength()
-    {
-        var sumSqrDeltas = 0.0;
-        for (var i = 0; i< Values.Count; i++)
-        {
-            sumSqrDeltas += Values[i] * Values[i];
-        }
-        return Math.Sqrt(sumSqrDeltas);
-    }
-
     public override string ToString()
     {
-        return "(" + string.Join(", ", Values) + ")";
+        return $"({string.Join(", ", Values.Select(x => $"{x:0.###}"))})";
     }
 
     public int CountUsedWines()
@@ -111,5 +120,10 @@ public class Mix
         }
 
         return new Mix(tmp);
+    }
+
+    public double DistanceOfNormals(Mix? other)
+    {
+        return Normal.Distance(other?.Normal);
     }
 }

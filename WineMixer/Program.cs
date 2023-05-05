@@ -6,7 +6,7 @@ namespace WineMixer
     {
         public static Random Random = new Random();
         public static Mix Target;
-        public static TankSizes TankSizes;
+        public static Configuration Configuration;
         public static int NumWines => Target.Count;
         public static Transition Root;
         public static Dictionary<Transition, double> Scores = new ();
@@ -16,9 +16,9 @@ namespace WineMixer
         {
             if (Scores.TryGetValue(transition, out var score))
                 return score;
-            var bestTank = transition.CurrentState.BestTank(Target);
-            var dist = bestTank.Item2;
-            var mix = bestTank.Item3;
+
+            var mix = transition.CurrentState.BestMix;
+            var dist = transition.CurrentState.TargetDistance(mix);
             var usedWines = mix?.CountUsedWines() ?? 0;
             var newScore = dist * 1000.0 + transition.Length - usedWines * 100;
             Scores.Add(transition, newScore);
@@ -34,21 +34,14 @@ namespace WineMixer
 
         public static void Output(State state)
         {
-            var bestTank = state.BestTank(Target);
-            var tank = bestTank.Item1;
-            var dist = bestTank.Item2;
-            var mix = bestTank.Item3;
-            var usedWines = state.UsedWines();
-            Console.WriteLine($"Distance from target = {dist}, wines = {usedWines}");
-            Console.WriteLine($"Target = {Target}, ");
-            Console.WriteLine($"Tank [{tank}] contains [{mix}]");
+            Console.WriteLine(state);
         }
 
         public static void OutputValidCombineOperations()
         {
             Console.WriteLine("Valid combine operations:");
             var i = 0;
-            foreach (var tc in TankSizes.ValidTankCombines)
+            foreach (var tc in Configuration.ValidTankCombines)
             {
                 Console.WriteLine($"Operation {i++}: {tc}");
             }
@@ -145,9 +138,9 @@ namespace WineMixer
 
         public static void Main(string[] args)
         {
-            Target = Mix.LoadFromFile(args[1]);
-            TankSizes = TankSizes.LoadFromFile(args[0], NumWines);
-            var state = new State(TankSizes, NumWines);
+            Configuration = Configuration.LoadFromFiles(args[0], args[1]);
+
+            var state = new State(Configuration);
 
             Root = new Transition(null, state, null, null, null);
             Transitions.Add(Root);
@@ -166,7 +159,6 @@ namespace WineMixer
 
                 Console.WriteLine($"Time elapsed = {sw.Elapsed}");
             }
-
         }
     }
 }

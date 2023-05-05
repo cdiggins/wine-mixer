@@ -20,7 +20,7 @@ public class Transition
     public AddWine? AddWineA { get; }
     public AddWine? AddWineB { get; }
     public TankCombine Combine { get; }
-    public TankSizes TankSizes => PrevState.TankSizes;
+    public Configuration Configuration => PrevState.Configuration;
     public int NumWines => PrevState.NumWines;
 
     public int Length
@@ -108,18 +108,13 @@ public class Transition
         return _transitions ??= GetPossibleTransitions();
     }
 
-    public bool IsBetterOrSame(Mix target)
-    {
-        return CurrentState.BestDistance(target) <= PrevState.BestDistance(target);
-    }
-
     private IReadOnlyList<Transition> GetPossibleTransitions()
     {
         if (!IsValid) return Array.Empty<Transition>();
         if (PrevState == null) return Array.Empty<Transition>();
 
         var r = new List<Transition>();
-        foreach (var tc in TankSizes.ValidTankCombines)
+        foreach (var tc in Configuration.ValidTankCombines)
         {
             r.Add(new Transition(this, CurrentState, tc, null, null));
             

@@ -1,12 +1,13 @@
+using System.Diagnostics;
 using WineMixer;
 
 namespace WineMixerTests;
 
 public static class Tests
 {
-    public const int NumWines = 4;
+    public static Mix Target = new Mix(0.1, 0.15, 0.25, 0.5);
 
-    public static int[][] GetTanksConfigurations()
+    public static int[][] PossibleTankSizes()
     {
         return new[]
         {
@@ -19,17 +20,17 @@ public static class Tests
         };
     }
 
-    public static IReadOnlyList<TankSizes> GetInputTankSizes()
-        => GetTanksConfigurations().Select(ToTankSize).ToList();
+    public static IReadOnlyList<Configuration> GetInputConfigurations()
+        => PossibleTankSizes().Select(tc => ToConfiguration(tc, Target)).ToList();
 
-    public static TankSizes ToTankSize(int[] sizes)
+    public static Configuration ToConfiguration(int[] sizes, Mix target)
     {
-        return new TankSizes(sizes, NumWines);
+        return new Configuration(sizes, target);
     }
 
     [Test]
-    [TestCaseSource(nameof(GetInputTankSizes))]
-    public static void OutputCombineSteps(TankSizes sizes)
+    [TestCaseSource(nameof(GetInputConfigurations))]
+    public static void OutputCombineSteps(Configuration sizes)
     {
         Console.WriteLine($"Valid combine steps");
         var i = 0;
@@ -41,8 +42,8 @@ public static class Tests
     }
         
     [Test]
-    [TestCaseSource(nameof(GetInputTankSizes))]
-    public static void OutputBreakdowns(TankSizes sizes)
+    [TestCaseSource(nameof(GetInputConfigurations))]
+    public static void OutputBreakdowns(Configuration sizes)
     {
         var g = new Graph(sizes);
         foreach (var n in g.Nodes)
@@ -60,31 +61,20 @@ public static class Tests
         }
     }
 
-    public static void OutputStateAnalysis(State state, Mix target)
+    public static void OutputStateAnalysis(State state)
     {
-        Console.WriteLine($"State analysis");
-        OutputStateContents(state, target);
+        Console.WriteLine(state);
 
-        var totalTanks = state.NumTanks;
-        var usedTanks = state.Contents.Count(x => x != null);
-        Console.WriteLine($"tanks used = {usedTanks} / {totalTanks} ");
+        var ops = state.GetValidOperations().ToList();
+        Console.WriteLine($"Found {ops.Count} immediate operations");
 
-        var totalVolume = state.TankSizes.Volume;
-        var usedVolume = state.Contents.Select((x, i) => x == null ? 0 : state.TankSizes[i]).Sum();
-        Console.WriteLine($"volume = {usedVolume} / {totalVolume}");
+        var combineTree = state.CombineTree().ToList();
+        Console.WriteLine($"Found {combineTree.Count} states reachable via combines only");
 
-        var totalWines = state.NumWines;
-        var numUsedWines = state.UsedWines();
-        Console.WriteLine($"used wines = {numUsedWines} / {totalWines}");
+        //var opTree = state.OperationTree().ToList();
+        //Console.WriteLine($"Found {opTree.Count} reachable states");
 
-        var diffs = state.GetTankDifferences(target).ToList();
-        var bestDiff = diffs.MinBy(diff => diff.GetLength());
-        var dist = bestDiff?.GetLength() ?? double.MaxValue;
-        Console.WriteLine($"best difference is {bestDiff} has distance {dist}");
-
-        var bestMix = state.Contents.MinBy(target.Distance);
-        Console.WriteLine($"best tank mix is {bestMix} which has distance {target.Distance(bestMix)}");
-
+        /*
         var deltas = state.GetCombineDeltas(target).ToList();
         var smallestDelta = deltas.MinBy(d => d.Length);
         var numDeltas = deltas.Count;
@@ -109,88 +99,76 @@ public static class Tests
         var bestCombineTuple = state.BestCombine(target);
         var bestCombineOp = bestCombineTuple.Item1;
         var bestCombineMix = bestCombineTuple.Item2;
-        var bestCombineDist = target.Distance(bestCombineMix);
+        var bestCombineDist = target.BlendDistance(bestCombineMix);
         Console.WriteLine($"The best combine operation is {bestCombineOp} and would yield {bestCombineMix} with distance {bestCombineDist}");
+
+        var sw = Stopwatch.StartNew();
+        var bestCombineTreeMix = bestCombine?.BestMix;
+        var dist2 = target.BlendDistance(bestCombineTreeMix);
+        Console.WriteLine($"Found {combines.Count} combine operations in {sw.Elapsed} time");
+        Console.WriteLine($"The best mix was {bestCombineTreeMix} with distance {dist2}");
+        */
     }
 
-    public static void OutputStateContents(State state, Mix target)
+    public static double Score(State state)
     {
-        var i = 0;
-        foreach (var mix in state.Contents)
-        {
-            var dist = target.Distance(mix);
-            Console.WriteLine($"Tank {i}:{state.TankSizes[i]} has {mix} which has distance {dist}");
-            i++;
-        }
+        return state.BestMixDistance + state.AverageMixDistance / 1000;
     }
 
-    public static double EvaluateOperation(State state, Operation op, IReadOnlyList<Mix> targets)
+    public static Operation? ChooseOperationGreedily(State state)
     {
-        var tmp = state.Apply(op);
-        var r = double.MaxValue;
-        foreach (var mix in tmp.Contents)
-        {
-            foreach (var target in targets)
-            {
-                r = Math.Min(target.Distance(mix), r);
-            }
-        }
-
-        return r;
-    }
-
-    public static Operation? ChooseOperationGreedily(State state, Mix target)
-    {
-        // Chose the op that either
-        // 1 produces the best wine or
-        // 2 produces the best delta. 
-
-        var deltas = state.GetCombineDeltas(target).ToList();
-        var mixes = deltas.Select(d => d.DeltaMix).Append(target).ToList();
         var ops = state.GetValidOperations().ToList();
-        Console.WriteLine($"Considering {ops.Count} operations against {mixes.Count} targets");
-
-        Operation? r = null;
-        var min = double.MaxValue;
-        foreach (var op in ops)
-        {
-            var tmp = EvaluateOperation(state, op, mixes);
-            if (tmp < min)
-            {
-                r = op;
-                min = tmp;
-            }
-        }
-        
-        Console.WriteLine($"Chose an operation {r} with value {min}");
+        var r = ops.MinBy(op => Score(state.Apply(op)));
+        Console.WriteLine($"From {ops.Count} operations greedily chose {r}");
         return r;
+    }
+
+    public static State ApplyGreedyOperation(State state)
+    {
+        return state.Apply(ChooseOperationGreedily(state));
     }
 
     [Test]
     public static void Experiment()
     {
-        var sizes = GetInputTankSizes()[1];
-        var target = new Mix(0.1, 0.15, 0.25, 0.5);
-        var state = new State(sizes, target.Count);
+        var config = GetInputConfigurations()[1];
+        var state = new State(config);
 
-        for (var i = 0; i < 15; ++i)
+        for (var i = 0; i < 10; ++i)
         {
-            OutputStateAnalysis(state, target);
+            OutputStateAnalysis(state);
             //state = state.ApplyRandomOperation();
-            var op = ChooseOperationGreedily(state, target);
-            state = state.Apply(op);
+            state = ApplyGreedyOperation(state);
+        }
+    }
+
+    [Test]
+    public static void CountReachableStates()
+    {
+        var config = GetInputConfigurations()[1];
+        var state = new State(config);
+
+        var cnt = 0;
+        foreach (var tmp in state.OperationTree())
+        {
+            cnt++;
+            if (cnt % 1000 == 0)
+            {
+                Debug.WriteLine($"State number {cnt}");
+                Debug.WriteLine(tmp);
+            }
         }
     }
 
     [Test]
     public static void SomethingWrongWithDistance()
     {
-        var mix = new Mix(0.6666666666666666, 0, 0, 0.3333333333333333);
+        var mix = new Mix(0.6666666666666666, 0, 0, 0.3333333333333333) * 2;
         var target = new Mix(0.1, 0.15, 0.25, 0.5);
-        
-        Console.WriteLine($"target={target} length={target.GetLength()} mix={mix} length={mix.GetLength()}");
-        Console.WriteLine($"target to mix distance = {target.Distance(mix)}");
-        Console.WriteLine($"mix to target distance = {mix.Distance(target)}");
+
+        Console.WriteLine($"target={target} length={target.Length} normal={target.Normal} normal length={target.Normal.Length}");
+        Console.WriteLine($"mix={mix} length={mix.Length} normal={mix.Normal} length={target.Normal.Length}");
+        Console.WriteLine($"target to mix blend distance = {target.DistanceOfNormals(mix)} regular distance {target.Distance(mix)}");
 
         Console.WriteLine($"target - mix = {target - mix}");
         Console.WriteLine($"mix - target = {mix - target}");

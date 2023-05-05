@@ -440,12 +440,101 @@ Finding a best delta only makes sense if we can get the delta into the final tar
 
 All things equal we would want the best wine in the smallest container. Maybe. 
 
+## Normalization 
 
+Just adding vectors isn't quite accurate, the result may have to be normalized.
+Normalizing though has a problem because the proportions are no longer correct. 
+The idea of delta vectors needs to be revisited. 
 
+Trying to always normalize in advance causes a problem. We can't compute normal 
+vectors etc. 
 
+One possibility is to use proper amounts in each barrel. This would make 
+computation a bit easier. The target for a barrel, is simply the percentage 
+amount multiplied by the barrel size. 
 
+## Normalizing the Distance
 
+The idea of dividing by the sum doesn't work for vectors that are nearly zero
+in length. When computing the delta we can get a vector that might have some 
+arbitrary distance. 
 
+We could compute distances to each target based on actual amounts: not normalized. 
+This would be kind of interesting. 
+
+This would require interpreting everything differently. 
+
+## Hypothesis: Evaluating the Tree of Combines 
+
+Given a state, how many combines are possible? At the most: N^2. 400 * 400 = 16000. 
+This number will never arrive. Exploring the tree of all possible combines and evaluating
+it for the best state would be one way to evaluate a position. 
+
+So we could say, given a possible operation, what is the best possible outcome if 
+all that happens afterwards are combines. Is this new tree better or worse? 
+
+This is a large search space and it might get simpler. 
+
+## Hypothesis: Average Mix of System and Distance
+
+One hypothesis is that optimizing the system by computing the average mix of 
+all of the tanks and computing that distance, will be an overall good thing. 
+
+Either this can be the primary scoring metric, or it can be a secondary 
+scoring metric. 
+
+As a secondary metric, the first metric would be: how close is the best tank
+to the overall final result. And given multiple tanks that meet that, 
+whawt is the overall average. 
+
+Another metric to be considered (maybe in between the two) is 
+tank sizes. Or alternatively, how many tanks can it be combined with. 
+
+## To measure 
+
+How big is the search space? 
+
+## Hypothesis:
+
+Never make the best tank worse. In an ideal solution it is 
+unlikely that making a worse wine, will ever help the final solution. 
+
+Consider two options:
+1. `AB = A @ B`
+2. `AC = A @ C`
+
+Where `@` represents the blend operation. What it means is a weighted average (Lerp)
+between the  components for some weight T. 
+
+Consider a score function `F(V) = Distance(B.Unit(), T.Unit())`.  
+
+Consider two distances: 
+
+The hypothesis is, if F(B) < F(C), then F(AB) < F(AC).
+
+Try it with number.
+
+```
+T = 10. 
+A = 5
+B = 8
+C = 6
+```
+
+It seems to work. 
+
+## Transitions and Tanks Splits
+
+When considering tank splits a problem can occur in that a tank combine and a tank split can 
+be repeated causing an infinite loop. 
+
+Two possible solutions:
+* Never allow a previously visited solution.
+* Force a tank split to be preceded/followed by adding some wine.
+
+But why not force a tank combine to be preceded by adding some wine.
+
+A split followed by another split followed by a combine, could make sense. 
 
 
 

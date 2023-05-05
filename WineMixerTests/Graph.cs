@@ -7,13 +7,13 @@ public class Graph
 {
     public Node[] Nodes { get; }
     public List<Edge> Edges { get; }
-    public TankSizes TankSizes { get; }
+    public Configuration Configuration { get; }
 
-    public Graph(TankSizes tankSizes)
+    public Graph(Configuration configuration)
     {
-        TankSizes = tankSizes;
-        Nodes = Enumerable.Range(0, tankSizes.Count).Select(i => new Node(i, tankSizes[i])).ToArray();
-        Edges = TankSizes.ValidTankCombines.Select(CreateEdge).ToList();
+        Configuration = configuration;
+        Nodes = Enumerable.Range(0, configuration.Count).Select(i => new Node(i, configuration[i])).ToArray();
+        Edges = Configuration.ValidTankCombines.Select(CreateEdge).ToList();
 
         foreach (var e in Edges)
         {
@@ -28,7 +28,7 @@ public class Graph
         {
             if (node.IncomingEdges.Count == 0)
             {
-                node.TanksSets.Add(new TankSet(TankSizes, node.Tank));
+                node.TanksSets.Add(new TankSet(Configuration, node.Tank));
             }
 
             foreach (var edge in node.IncomingEdges)
@@ -42,7 +42,7 @@ public class Graph
                     foreach (var tsB in nodeB.TanksSets)
                     {
                         // NOTE: if we have seen a tank set before, then we don't really want to keep it. 
-                        var ts = new TankSet(TankSizes, tsA, tsB);
+                        var ts = new TankSet(Configuration, tsA, tsB);
                         node.TanksSets.Add(ts);
                     }
                 }

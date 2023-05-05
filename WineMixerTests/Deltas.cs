@@ -12,7 +12,7 @@ public class CombineDelta
     public int EmptyTank { get; }
     public int TargetTank { get; }
     public Mix DeltaMix { get; }
-    public double Length => DeltaMix.GetLength();
+    public double Length => DeltaMix.Length;
 
     public CombineDelta(Mix deltaMix, int occupiedTank, int emptyTank, int targetTank)
     {
@@ -27,7 +27,7 @@ public static class DeltaExtensions
 {
     public static IEnumerable<CombineDelta> GetCombineDeltas(this State state, Mix target)
     {
-        foreach (var tc in state.TankSizes.ValidTankCombines)
+        foreach (var tc in state.Configuration.ValidTankCombines)
         {
             if (!state.IsTankOccupied(tc.Output))
             {

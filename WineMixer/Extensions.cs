@@ -1,42 +1,69 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace WineMixer;
 
 public static class Extensions
 {
+    const double Epsilon = 0.000001;
+
     public static IEnumerable<Transition> GetTransitions(this State state)
-    {
-        var t = new Transition(null, state, null, null, null);
-        return t.GetOrComputeTransitions();
-    }
+        => new Transition(null, state, null, null, null).GetOrComputeTransitions();
 
     private static readonly Random Rng = new();
 
-    public static Operation? RandomOperation(State state)
+    public static Operation? RandomOperation(State state) 
+        => state.GetValidOperations().ToList().GetRandomElement();
+
+    public static T? GetRandomElement<T>(this IReadOnlyList<T> self) 
+        => self.Count == 0 ? default : self[Rng.Next(self.Count)];
+
+    public static State ApplyRandomOperation(this State state) 
+        => state.Apply(RandomOperation(state));
+
+    public static bool AlmostEquals(this double self, double x) 
+        => Math.Abs(self - x) < Epsilon;
+
+    public static IEnumerable<State> CombineTree(this State state)
     {
-        return state.GetValidOperations().ToList().GetRandomElement();
+        foreach (var op in state.GetValidTankCombineOperations())
+        {
+            var state1 = state.Apply(op);
+            yield return state1;
+            foreach (var state2 in state1.CombineTree())
+            {
+                yield return state2;
+            }
+        }
     }
 
-    public static T? GetRandomElement<T>(this IReadOnlyList<T> self)
+    public static IEnumerable<State> OperationTree(this State state)
     {
-        return self.Count == 0 
-            ? default : self[Rng.Next(self.Count)];
+        foreach (var op in state.GetValidOperations())
+        {
+            var state1 = state.Apply(op);
+            yield return state1;
+            foreach (var state2 in state1.OperationTree())
+            {
+                yield return state2;
+            }
+        }
     }
 
-    public static State ApplyRandomOperation(this State state)
+    public static Mix? Average(this IEnumerable<Mix?> mixes)
     {
-        return state.Apply(RandomOperation(state));
-    }
-
-    public static (TankCombine?, Mix?) BestCombine(this State state, Mix target)
-    {
-        var tc = state.GetValidTankCombineOperations().MinBy(tc => target.Distance(state.CombineResult(tc.InputA, tc.InputB)));
-        return tc != null 
-            ? (tc, state.CombineResult(tc.InputA, tc.InputB)) 
-            : (null, null);
+        Mix? result = null;
+        var i = 0;
+        foreach (var m in mixes)
+        {
+            if (m == null)
+                continue;
+            if (result == null) 
+                result = m;
+            else
+                result += m;
+            i++;
+        }
+        return result == null 
+            ? result : result / i;
     }
 }

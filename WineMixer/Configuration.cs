@@ -4,11 +4,11 @@
 /// Used to store the sizes of each tanks, and the number of wines.
 /// This class also pre-computes possible steps to reduce over-computation.
 /// </summary>
-public class TankSizes
+public class Configuration
 {
-    public TankSizes(IReadOnlyList<int> sizes, int numWines)
+    public Configuration(IReadOnlyList<int> sizes, Mix target)
     {
-        NumWines = numWines;
+        Target = target;
         Sizes = sizes;
         ValidTankSplits = ComputeValidTankSplits().ToList();
         ValidTankCombines = ComputeValidTankCombines().ToList();
@@ -18,8 +18,9 @@ public class TankSizes
 
     public IReadOnlyList<int> Sizes { get; }
     public int Count => Sizes.Count;
-    public int NumWines { get; }
+    public int NumWines => Target.Count;
     public int Volume { get; }
+    public Mix Target { get; }
 
     public int this[int i]
         => Sizes[i];
@@ -73,10 +74,21 @@ public class TankSizes
     public IReadOnlyList<TankCombine> ValidTankCombines { get; }
     public IReadOnlyList<AddWine> ValidAddWines { get; }
 
-    public static TankSizes LoadFromFile(string fileName, int numWines)
+    public double TargetDistance(Mix? mix)
+    {
+        return Target.DistanceOfNormals(mix);
+    }
+
+    public static Configuration LoadTankSizesFromFile(string fileName, Mix target)
     {
         var lines = File.ReadAllLines(fileName);
         var xs = lines.Select(int.Parse).ToList();
-        return new TankSizes(xs, numWines);
+        return new Configuration(xs, target);
+    }
+
+    public static Configuration LoadFromFiles(string tankSizeFileName, string wineMixFileName)
+    {
+        var target = Mix.LoadFromFile(wineMixFileName);
+        return LoadTankSizesFromFile(tankSizeFileName, target);
     }
 }

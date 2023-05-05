@@ -34,7 +34,7 @@ namespace WineMixer.Experimental
 
     public class TankSet
     {
-        public TankSizes Sizes { get; }
+        public Configuration Sizes { get; }
         public List<Tank> Tanks { get; } = new List<Tank>();
     }
 
