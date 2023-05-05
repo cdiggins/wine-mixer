@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.ObjectModel;
 using WineMixer;
 
 namespace WineMixerTests;
@@ -110,22 +111,28 @@ public static class Tests
         */
     }
 
-    public static double Score(State state)
+    public static double ScoreUsingBestAndAverage(State state)
+        => state.BestMixDistance + state.AverageMixDistance / 1000;
+
+    public static double ScoreUsingBest(State state)
+        => state.BestMixDistance;
+
+    public static double ScoreUsingCombineTree(State state)
     {
-        return state.BestMixDistance + state.AverageMixDistance / 1000;
+        var tree = state.CombineTree().ToList();
+        if (tree.Count == 0)
+        {
+            return ScoreUsingBest(state);
+        }
+        return tree.Select(ScoreUsingBest).Min();
     }
 
-    public static Operation? ChooseOperationGreedily(State state)
+    public static Operation? ChooseOperation(State state, Func<State, double> scoringFunc)
     {
         var ops = state.GetValidOperations().ToList();
-        var r = ops.MinBy(op => Score(state.Apply(op)));
-        Console.WriteLine($"From {ops.Count} operations greedily chose {r}");
+        var r = ops.MinBy(op => scoringFunc(state.Apply(op)));
+        Console.WriteLine($"From {ops.Count} operations chose {r}");
         return r;
-    }
-
-    public static State ApplyGreedyOperation(State state)
-    {
-        return state.Apply(ChooseOperationGreedily(state));
     }
 
     [Test]
@@ -134,11 +141,12 @@ public static class Tests
         var config = GetInputConfigurations()[1];
         var state = new State(config);
 
-        for (var i = 0; i < 10; ++i)
+        for (var i = 0; i < 20; ++i)
         {
             OutputStateAnalysis(state);
-            //state = state.ApplyRandomOperation();
-            state = ApplyGreedyOperation(state);
+
+            var op = ChooseOperation(state, ScoreUsingCombineTree);
+            state = state.Apply(op);
         }
     }
 
@@ -148,15 +156,26 @@ public static class Tests
         var config = GetInputConfigurations()[1];
         var state = new State(config);
 
-        var cnt = 0;
-        foreach (var tmp in state.OperationTree())
+        for (var i = 3; i < 10; ++i)
         {
-            cnt++;
-            if (cnt % 1000 == 0)
+            var sw = new Stopwatch();
+            Debug.WriteLine($"Considering all reachable states to depth {i}");
+            var cnt = 0;
+            var best = state;
+            foreach (var tmp in state.OperationTree(i))
             {
-                Debug.WriteLine($"State number {cnt}");
-                Debug.WriteLine(tmp);
+                cnt++;
+                if (cnt % 50000 == 0)
+                {
+                    Debug.WriteLine($"State number {cnt}");
+                    //Debug.WriteLine(tmp);
+                }
+
+                if (tmp.BestMixDistance < best.BestMixDistance)
+                    best = tmp;
             }
+            Debug.WriteLine($"Best match found of {cnt} considered");
+            Debug.WriteLine(best);
         }
     }
 

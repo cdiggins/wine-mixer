@@ -36,7 +36,7 @@ public class State
             i++;
         }
 
-        AverageMix = Contents.Average();
+        AverageMix = Contents.Select(c => c?.Normal).Average();
         AverageMixDistance = TargetDistance(AverageMix);
         BestMix = Contents.MinBy(TargetDistance);
         BestMixDistance = TargetDistance(BestMix);
@@ -128,8 +128,9 @@ public class State
         sb.AppendLine($"State {StateId} depth={Depth} volume={Volume} tanks={UsedTanks}/{NumTanks}");
         if (details)
         {
-            sb.AppendLine($"Best mix is {BestMix} of distance {BestMixDistance:0.######}");
-            sb.AppendLine($"Average mix is {AverageMix} of distance {AverageMixDistance:0.######}");
+            sb.AppendLine($"Target is {Target}");
+            sb.AppendLine($"Best mix is {BestMix?.Normal} of distance {BestMixDistance:0.######}");
+            sb.AppendLine($"Average mix is {AverageMix?.Normal} of distance {AverageMixDistance:0.######}");
             for (var i = 0; i < NumTanks; ++i)
             {
                 var t = Contents[i];

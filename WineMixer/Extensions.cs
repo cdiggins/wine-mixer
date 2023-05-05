@@ -36,13 +36,16 @@ public static class Extensions
         }
     }
 
-    public static IEnumerable<State> OperationTree(this State state)
+    public static IEnumerable<State> OperationTree(this State state, int maxDepth)
     {
+        if (maxDepth <= 0)
+            yield break;
+        ;
         foreach (var op in state.GetValidOperations())
         {
             var state1 = state.Apply(op);
             yield return state1;
-            foreach (var state2 in state1.OperationTree())
+            foreach (var state2 in state1.OperationTree(maxDepth - 1))
             {
                 yield return state2;
             }
