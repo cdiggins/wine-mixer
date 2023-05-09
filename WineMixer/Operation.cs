@@ -66,3 +66,25 @@ public class AddWine : Operation
     public override string ToString()
         => $"Add wine {Wine} to tank {Tank}";
 }
+
+/// <summary>
+/// This is a generic operation that moves multiple input tanks and multiple output tanks.
+/// The requirements are:
+/// 1) Output tanks are empty
+/// 2) Input tanks add up to output tanks.
+/// 3) The input and output tanks are not the same. 
+/// </summary>
+public class MultiSplit : Operation
+{
+    public IReadOnlyList<int> Inputs { get; }
+    public IReadOnlyList<int> Outputs { get; }
+
+    public MultiSplit(IReadOnlyList<int> inputs, IReadOnlyList<int> outputs)
+    {
+        Inputs = inputs;
+        Outputs = outputs;
+    }
+
+    public override string ToString()
+        => $"({string.Join(",", Inputs)}) -> ({string.Join(",", Outputs)})";
+}

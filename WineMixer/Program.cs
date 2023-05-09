@@ -138,7 +138,10 @@ namespace WineMixer
 
         public static void Main(string[] args)
         {
-            Configuration = Configuration.LoadFromFiles(args[0], args[1]);
+            var tankSizesFileName = args[0];
+            var wineMixFileName = args[1];
+            var optionsFileName = args.Length > 2 ? args[2] : "";
+            Configuration = Configuration.LoadFromFiles(tankSizesFileName, wineMixFileName, optionsFileName);
 
             var state = new State(Configuration);
 

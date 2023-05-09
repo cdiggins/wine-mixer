@@ -29,7 +29,7 @@ public static class DeltaExtensions
     {
         foreach (var tc in state.Configuration.ValidTankCombines)
         {
-            if (!state.IsTankOccupied(tc.Output))
+            if (!state.IsOccupied(tc.Output))
             {
                 var mixA = state[tc.InputA];
                 var mixB = state[tc.InputB];

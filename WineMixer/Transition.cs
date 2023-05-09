@@ -100,7 +100,7 @@ public class Transition
 
     public bool TankOccupiedOrAddedTo(int tank)
     {
-        return PrevState.IsTankOccupied(tank) || AddWineA?.Tank == tank || AddWineB?.Tank == tank;
+        return PrevState.IsOccupied(tank) || AddWineA?.Tank == tank || AddWineB?.Tank == tank;
     }
 
     public IReadOnlyList<Transition> GetOrComputeTransitions()

@@ -54,7 +54,7 @@ public class State
     public double Volume { get; }
     public int UsedTanks { get; }
 
-    public bool IsTankOccupied(int i) 
+    public bool IsOccupied(int i) 
         => Contents[i] != null;
 
     public Mix? this[int i]
@@ -72,14 +72,14 @@ public class State
         => Configuration.TargetDistance(mix);
 
     public bool IsValidTankSplit(TankSplit split) =>
-        IsTankOccupied(split.Input) 
-        && !IsTankOccupied(split.OutputA) 
-        && !IsTankOccupied(split.OutputB);
+        IsOccupied(split.Input) 
+        && !IsOccupied(split.OutputA) 
+        && !IsOccupied(split.OutputB);
 
     public bool IsValidTankCombine(TankCombine combine) =>
-        !IsTankOccupied(combine.Output)
-        && IsTankOccupied(combine.InputA)
-        && IsTankOccupied(combine.InputB);
+        !IsOccupied(combine.Output)
+        && IsOccupied(combine.InputA)
+        && IsOccupied(combine.InputB);
 
     public IEnumerable<TankSplit> GetValidTankSplitOperations()
         => Configuration.ValidTankSplits.Where(IsValidTankSplit);
@@ -88,10 +88,23 @@ public class State
         => Configuration.ValidTankCombines.Where(IsValidTankCombine);
 
     public IEnumerable<AddWine> GetValidAddWineOperations()
-        => Configuration.ValidAddWines.Where(x => !IsTankOccupied(x.Tank));
+        => Configuration.ValidAddWines.Where(x => !IsOccupied(x.Tank));
 
     public Mix CombineResult(int a, int b)
         => Contents[a]! + Contents[b]!;
+
+    public IEnumerable<TankList> OccupiedTankLists()
+        => Configuration.TankLists.Where(tl => tl.Tanks.All(IsOccupied));
+
+    public IEnumerable<TankList> UnoccupiedTankLists()
+        => Configuration.TankLists.Where(tl => !tl.Tanks.Any(IsOccupied));
+
+    public IEnumerable<MultiSplit> ComputeMultiSplits()
+    {
+        foreach (var occ in OccupiedTankLists())
+        foreach (var unocc in UnoccupiedTankLists())
+            yield return new MultiSplit(occ.Tanks, unocc.Tanks);
+    }
 
     public State Apply(Operation? operation)
     {
@@ -114,7 +127,12 @@ public class State
                 newContents[tankSplit.OutputB] = Contents[tankSplit.Input];
                 newContents[tankSplit.Input] = null;
                 break;
-            
+
+            case MultiSplit multiSplit:
+            {
+                throw new NotImplementedException();
+            }
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(operation));
         }
@@ -122,14 +140,20 @@ public class State
         return new State(Configuration, newContents, Depth+1);
     }
 
-    public StringBuilder BuildString(StringBuilder sb, bool details = true)
+    public StringBuilder BuildString(StringBuilder sb = null, bool details = true, bool contents = true)
     {
+        sb ??= new StringBuilder();
         sb.AppendLine($"State {StateId} depth={Depth} volume={Volume} tanks={UsedTanks}/{NumTanks}");
+
         if (details)
         {
             sb.AppendLine($"Target is {Target}");
             sb.AppendLine($"Best mix is {BestMix?.Normal} of distance {BestMixDistance:0.######}");
             sb.AppendLine($"Average mix is {AverageMix?.Normal} of distance {AverageMixDistance:0.######}");
+        }
+
+        if (contents)
+        {
             for (var i = 0; i < NumTanks; ++i)
             {
                 var t = Contents[i];
@@ -142,7 +166,7 @@ public class State
     }
 
     public override string ToString() 
-        => BuildString(new StringBuilder()).ToString();
+        => BuildString().ToString();
 
     public Mix? AverageMix { get; }
     public double AverageMixDistance { get; }

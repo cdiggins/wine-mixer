@@ -536,6 +536,12 @@ But why not force a tank combine to be preceded by adding some wine.
 
 A split followed by another split followed by a combine, could make sense. 
 
+## Some Notes
+
+Adding wine when looking at the combine tree makes sense. Adding a new wine
+should be done if it has the potential to improve things. 
+
+All things equal: having the best wine in a smaller container is better. 
 
 
 
