@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using WineMixer.Serialization;
 
@@ -13,7 +14,7 @@ public class State
 {
     public static State Create(Configuration configuration)
     {
-        var contents = new Mix?[configuration.NumTanks];
+        var contents = new Mix[configuration.NumTanks];
 
         // TODO: for now the first N tanks contain the first N wines. 
         var numWines = configuration.NumWines;
@@ -26,75 +27,40 @@ public class State
         return new State(configuration, contents);
     }
 
-    public State(Configuration configuration, IReadOnlyList<Mix?> contents, int depth = 0)
+    public State(Configuration configuration, IReadOnlyList<Mix> contents, int depth = 0)
     {
         Debug.Assert(configuration.Sizes.Count == contents.Count);
         Configuration = configuration;
         Contents = contents;
         Depth = depth;
         StateId = _nextStateId++;
-        var i = 0;
-
-        var sum = Configuration.EmptyMix;
-        foreach (var mix in Contents)
-        {
-            if (mix != null)
-            {
-                UsedTanks++;
-                Volume += GetTankSize(i);
-
-                var dist = mix.DistanceOfNormals(NormalizedTarget);
-                sum += mix;
-
-                if (dist < BestMixDistance)
-                {
-                    BestMixDistance = Math.Min(dist, BestMixDistance);
-                    BestMix = mix;
-                }
-            }
-            i++;
-
-        }
-
-        AverageMix = sum / UsedTanks;
-        AverageMixDistance = TargetDistance(AverageMix);
-        TotalWine = Contents.Sum(m => m?.Sum ?? 0);
     }
 
     private static int _nextStateId;
 
     public int NumTanks => Configuration.NumTanks;
-    public int NumWines => Configuration.NumWines;
     public Configuration Configuration { get; }
-    public IReadOnlyList<Mix?> Contents { get; }
-    public IEnumerable<Mix> Mixes => Contents.Where(m => m != null);
-    public Mix UnnormalizedTarget => Configuration.Target;
-    public Mix NormalizedTarget => Configuration.Target.Normal;
+    public IReadOnlyList<Mix> Contents { get; }
+    public IEnumerable<Mix> Mixes => Contents.Where(m => m != null)!;
     public int Depth { get; }
     public int StateId { get; }
     public double Volume { get; }
     public int UsedTanks { get; }
-    public double TotalWine { get; }
+    public double TotalWine => Contents.Sum(m => m?.Sum ?? 0);
     public IReadOnlyList<Transfer> Transfers => ComputeTransfers();
     private List<Transfer> _transfers;
-
-    public Mix AverageMix { get; }
-    public double AverageMixDistance { get; } = double.MaxValue;
-    public Mix BestMix { get; }
-    public Mix ScaledBestMix => BestMix * Configuration.Target.Sum; 
-    public double BestMixDistance { get; } = double.MaxValue;
 
     public bool IsOccupied(int i) 
         => Contents[i] != null;
 
-    public Mix? this[int i]
+    public Mix this[int i]
         => Contents[i];
 
     public double GetTankSize(int i)
         => Configuration[i];
 
-    public double TargetDistance(Mix? mix) 
-        => Configuration.TargetDistance(mix);
+    public double TargetDistance(Mix mix) 
+        => Configuration.TargetDistance(mix.SumOfOne);
 
     public IEnumerable<TankList> OccupiedTankLists()
         => Configuration.TankLists.Where(IsOccupied);
@@ -179,23 +145,10 @@ public class State
         return r;
     }
 
-    public StringBuilder BuildString(StringBuilder sb = null, bool details = true, bool contents = true)
+    public StringBuilder BuildString(StringBuilder sb = null, bool contents = true)
     {
         sb ??= new StringBuilder();
         sb.AppendLine($"State {StateId} depth={Depth} volume={Volume} tanks={UsedTanks}/{NumTanks}");
-
-        if (details)
-        {
-            sb.AppendLine($"# of possible transfers {Transfers.Count}");
-            sb.AppendLine($"Target is {UnnormalizedTarget}");
-            sb.AppendLine($"Normalized target is {NormalizedTarget}");
-            sb.AppendLine($"Best mix is {BestMix} of distance {BestMixDistance:0.######}");
-            sb.AppendLine($"Normalized best mix is {BestMix.Normal}");
-            sb.AppendLine($"Scaled best mix is {ScaledBestMix}");
-            
-            // NOTE: the average mix is not interesting at this time. 
-            // sb.AppendLine($"Average mix is {AverageMix?.Normal} of distance {AverageMixDistance:0.######}");
-        }
 
         if (contents)
         {
@@ -203,8 +156,9 @@ public class State
             {
                 var t = Contents[i];
                 if (t != null)
-                    sb.AppendLine($"Tank {i} has size {Configuration[i]} and contains {t.Normal} of distance {TargetDistance(t):0.###}"); else 
-                    sb.AppendLine($"Tank {i} has size {Configuration[i]} and is empty");
+                    sb.AppendLine($"Tank {i} has size {Configuration[i]} and contains {t.SumOfOne} of distance {TargetDistance(t):0.###}");
+                //else 
+                //  sb.AppendLine($"Tank {i} has size {Configuration[i]} and is empty");
             }
         }
         return sb;
@@ -215,19 +169,6 @@ public class State
 
     public IEnumerable<State> GetNextStates()
         => Transfers.Select(Apply);
-
-    public IEnumerable<Mix> Offsets()
-    {
-        foreach (var m in Mixes)
-        {
-            var target = NormalizedTarget.Normal * m.Sum;
-            var offset = target - m;
-            // Just check that the offset + the 
-            var tmp = m + offset;
-            Debug.Assert(TargetDistance(tmp).AlmostEquals(0));
-            yield return m + offset * 2;
-        }
-    }
 
     public void CheckTotalWineIsValid()
     {
@@ -245,4 +186,7 @@ public class State
                 throw new Exception($"Invalid amount of wine: {amount} expected {GetTankSize(i)}");
         }
     }
+
+    public Mix BestMix()
+        => Mixes.MinBy(TargetDistance);
 }

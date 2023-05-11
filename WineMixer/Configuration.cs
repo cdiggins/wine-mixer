@@ -12,7 +12,8 @@ public class Configuration
 {
     public Configuration(IReadOnlyList<int> sizes, Mix target, Options options)
     {
-        Target = target;
+        OriginalTarget = target;
+        Target = OriginalTarget.SumOfOne;
         Sizes = sizes;
         if (sizes.Count < NumWines)
             throw new Exception("The number of starting tanks has to be equal to or greater than the number of wines");
@@ -28,6 +29,7 @@ public class Configuration
     public int NumWines => Target.Count;
     public int Volume { get; }
     public Mix Target { get; }
+    public Mix OriginalTarget { get; }
     public Mix EmptyMix { get; }
     public Options Options { get; }
     public const string DefaultOptionsFileName = "options.json";
@@ -38,10 +40,11 @@ public class Configuration
     public int this[int i]
         => Sizes[i];
 
-    public double TargetDistance(Mix? mix)
-    {
-        return Target.DistanceOfNormals(mix);
-    }
+    public double TargetDistance(Mix mix)
+        => Target.Distance(mix.SumOfOne);
+
+    public Mix ScaleMixToOriginalTarget(Mix mix)
+        => mix.SumOfOne * OriginalTarget.Sum;
 
     public static Configuration LoadTankSizesFromFile(string fileName, Mix target, Options options)
     {

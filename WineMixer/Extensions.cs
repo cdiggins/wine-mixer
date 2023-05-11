@@ -8,15 +8,15 @@ public static class Extensions
 
     private static readonly Random Rng = new();
 
-    public static T? GetRandomElement<T>(this IReadOnlyList<T> self) 
+    public static T GetRandomElement<T>(this IReadOnlyList<T> self) 
         => self.Count == 0 ? default : self[Rng.Next(self.Count)];
 
     public static bool AlmostEquals(this double self, double x) 
         => Math.Abs(self - x) < Epsilon;
 
-    public static Mix? Average(this IEnumerable<Mix?> mixes)
+    public static Mix Average(this IEnumerable<Mix> mixes)
     {
-        Mix? result = null;
+        Mix result = null;
         var i = 0;
         foreach (var m in mixes)
         {

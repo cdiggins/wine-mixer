@@ -4,7 +4,7 @@ namespace WineMixer
 {
     public class Program
     {
-        public static string? ExeFolder =
+        public static string ExeFolder =
             Environment.ProcessPath != null ? Path.GetDirectoryName(Environment.ProcessPath) : "";
 
         public static string UsageFile = Path.Combine(ExeFolder, "usage.txt");
@@ -48,8 +48,7 @@ namespace WineMixer
         {
             Console.WriteLine($"Configuration analysis");
             Console.WriteLine($"The target blend is {config.Target} has {config.NumWines} components and adds up to {config.Target.Sum}");
-            Console.WriteLine($"The target blend with components of one is {config.Target.SumOfOne}");
-            Console.WriteLine($"The normalized target blend is {config.Target.Normal}");
+            Console.WriteLine($"The original target blend was {config.OriginalTarget} and added up to {config.OriginalTarget}");
             Console.WriteLine($"The number of starting tanks is {config.NumTanks}");
             Console.WriteLine($"The smallest tank is {config.Sizes.Min()} and the largest is {config.Sizes.Max()}");
             Console.WriteLine($"The starting amount of wine is {config.InitialWineAmount}");
@@ -57,12 +56,25 @@ namespace WineMixer
             Console.WriteLine($"JSON options provided are: {config.Options}");
         }
 
+        public static void OutputState(State state)
+        {
+            Console.WriteLine(state);
+            var bestMix = state.BestMix();
+            var dist = state.TargetDistance(bestMix);
+            Console.WriteLine($"Target mix is {state.Configuration.Target}");
+            Console.WriteLine($"Best mix   is {bestMix.SumOfOne}");
+            Console.WriteLine($"Distance is {dist:#.0000}");
+
+            Console.WriteLine($"Original Target mix is {state.Configuration.OriginalTarget}");
+            Console.WriteLine($"Scaled best mix     is {state.Configuration.ScaleMixToOriginalTarget(bestMix)}");
+        }
+
         public static void Main(string[] args)
         {
             try
             {
                 Console.WriteLine($"Initializing .... ");
-                Configuration? config = null;
+                Configuration config = null;
                 try
                 {
                     var tankSizesFileName = args[0];
@@ -108,7 +120,7 @@ namespace WineMixer
 
                     var sw = Stopwatch.StartNew();
                     Console.WriteLine($"Step {i}");
-                    Console.WriteLine(state.BuildString());
+                    OutputState(state);
                     var transfer = evaluator.GetBestTransfer(state);
                     if (transfer == null)
                     {
@@ -130,7 +142,9 @@ namespace WineMixer
 
                 WriteTransfers(transfers, outputStepsFilePath);
 
-                WriteMix(state.ScaledBestMix, outputBlendFilePath);
+                var bestMix = state.BestMix();
+                var finalMix = config.ScaleMixToOriginalTarget(bestMix);
+                WriteMix(finalMix, outputBlendFilePath);
                 WriteJson(states, transfers, outputJsonFlePath);
             }
             catch (Exception e)

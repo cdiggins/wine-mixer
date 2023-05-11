@@ -7,11 +7,14 @@ public class Evaluator
     public Evaluator(Options options)
         => Options = options;
 
-    public double Evaluate(State state) 
+    public double EvaluateByTransfers(State state) 
         => state.Transfers.Min(t => state.TargetDistance(state.GetMix(t)));
 
+    public double EvaluateByMix(State state)
+        => state.Mixes.Min(state.TargetDistance);
+
     public double Evaluate(State state, Transfer transfer) 
-        => Evaluate(state.Apply(transfer));
+        => EvaluateByTransfers(state.Apply(transfer));
 
     public Transfer ChooseBestTransfer(IEnumerable<(Transfer, double)> choices) 
         => choices.MinBy(tuple => tuple.Item2).Item1;

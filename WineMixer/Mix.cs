@@ -34,7 +34,7 @@ public class Mix
 
     public Mix SumOfOne => Length.AlmostEquals(0) ? this : Length.AlmostEquals(1) ? this : this / Sum;
 
-    public double Distance(Mix? other) 
+    public double Distance(Mix other) 
         => other == null 
             ? double.MaxValue 
             : (other - this).Length;
@@ -124,7 +124,7 @@ public class Mix
         return new Mix(tmp);
     }
 
-    public double DistanceOfNormals(Mix? other)
+    public double DistanceOfNormals(Mix other)
     {
         return Normal.Distance(other?.Normal);
     }
