@@ -2,6 +2,7 @@
 
 /// <summary>
 /// A tank list is a sequence of tanks, always ordered and with no repetitions.
+/// This is used to represent possible inputs and outputs from a transfer operation. 
 /// </summary>
 public class TankList
 {

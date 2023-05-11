@@ -4,163 +4,139 @@ namespace WineMixer
 {
     public class Program
     {
-        public static Random Random = new Random();
-        public static Mix Target;
-        public static Configuration Configuration;
-        public static int NumWines => Target.Count;
-        public static Transition Root;
-        public static Dictionary<Transition, double> Scores = new ();
-        public static List<Transition> Transitions = new ();
+        public static string? ExeFolder =
+            Environment.ProcessPath != null ? Path.GetDirectoryName(Environment.ProcessPath) : "";
 
-        public static double GetScore(Transition transition)
+        public static string UsageFile = Path.Combine(ExeFolder, "usage.txt");
+
+        public static void ShowUsage(bool exit = true)
         {
-            if (Scores.TryGetValue(transition, out var score))
-                return score;
-
-            var mix = transition.CurrentState.BestMix;
-            var dist = transition.CurrentState.TargetDistance(mix);
-            var usedWines = mix?.CountUsedWines() ?? 0;
-            var newScore = dist * 1000.0 + transition.Length - usedWines * 100;
-            Scores.Add(transition, newScore);
-            return newScore;
-        }
-
-        public static State ApplyRandomOperation(State state)
-        {
-            var operations = state.GetValidOperations().ToList();
-            var operation = operations[Random.Next(operations.Count)];
-            return state.Apply(operation);
-        }
-
-        public static void Output(State state)
-        {
-            Console.WriteLine(state);
-        }
-
-        public static void OutputValidCombineOperations()
-        {
-            Console.WriteLine("Valid combine operations:");
-            var i = 0;
-            foreach (var tc in Configuration.ValidTankCombines)
+            // Fall-back text for usage 
+            var usageText = "Usage: wine-mixer.exe <tanksizes> <winemix> [<optionsfilename>]";
+            try
             {
-                Console.WriteLine($"Operation {i++}: {tc}");
+                // Try loading a more elaborate usage file 
+                usageText = File.ReadAllText(UsageFile);
+            }
+            catch (Exception ex) 
+            {
+                Console.WriteLine(ex.Message);
+            }
+            Console.WriteLine(usageText);
+            if (exit)
+            {
+                Environment.Exit(1);
             }
         }
 
-        public static void Shuffle<T>(List<T> list)
+        public static void WriteMix(Mix mix, string fileName)
         {
-            for (var i = 0; i < list.Count; ++i)
-            {
-                var j = Random.Next(list.Count);
-                var tmp = list[i];
-                list[i] = list[j];
-                list[j] = tmp;
-            }
+            File.WriteAllLines(fileName, mix.Values.Select(v => $"{v:#.000}"));
         }
 
-        public static List<Transition> GetRandomTransitions(int n)
+        public static void WriteTransfers(IEnumerable<Transfer> transfers, string fileName)
         {
-            var tmp = Scores.Keys.ToList();
-            if (tmp.Count < n) return tmp;
-            Shuffle(tmp);
-            return tmp.Take(n).ToList();
+            File.WriteAllLines(fileName, transfers.Select(t => t.ToString()));
         }
 
-        public static Transition GetBestChild(Transition t)
+        public static void WriteJson(IReadOnlyList<State> states, IReadOnlyList<Transfer> transfers, string fileName)
         {
-            if (t.GetOrComputeTransitions().Count == 0)
-                return t;
-            return t.GetOrComputeTransitions().OrderBy(GetScore).First();
+            // TODO: implemetn this. 
         }
 
-        public static Transition GetRandomTransition()
+        public static void OutputConfigurationAnalysis(Configuration config)
         {
-            var r = Root;
-            while (true)
-            {
-                var ts = r.GetOrComputeTransitions();
-                if (ts.Count == 0)
-                {
-                    return r;
-                }
-                else
-                {
-                    var i = Random.Next(ts.Count);
-                    r = ts[i];
-                }
-            }
-        }
-
-        public static void ComputeTransitions()
-        {
-            const int BatchSize = 100;
-            Console.WriteLine($"Computing new batch of transitions");
-            
-            var bestScore = double.MaxValue;
-
-            for (var i = 0; i < BatchSize; ++i)
-            {
-                var t = GetRandomTransition();
-                var tmp = GetScore(t);
-                if (tmp < bestScore)
-                    bestScore = tmp;
-            }
-
-            Console.WriteLine($"Best score was {bestScore}, created {BatchSize} new transitions");
-        }
-
-        public static Transition Best()
-        {
-            Transition r = null;
-            var minScore = double.MaxValue;
-            foreach (var kv in Scores)
-            {
-                if (kv.Value < minScore)
-                {
-                    r = kv.Key;
-                    minScore = kv.Value;
-                }
-            }
-
-            return r;
-        }
-
-        public static void Output(Transition t)
-        {
-            Console.WriteLine($"Transition has {t.Length} steps and score {GetScore(t)}");
-            Output(t.CurrentState);
-            var ops = t.GetOperations();
-            foreach (var op in ops)
-            {
-                Console.WriteLine(op);
-            }
+            Console.WriteLine($"Configuration analysis");
+            Console.WriteLine($"The target blend is {config.Target} has {config.NumWines} components and adds up to {config.Target.Sum}");
+            Console.WriteLine($"The target blend with components of one is {config.Target.SumOfOne}");
+            Console.WriteLine($"The normalized target blend is {config.Target.Normal}");
+            Console.WriteLine($"The number of starting tanks is {config.NumTanks}");
+            Console.WriteLine($"The smallest tank is {config.Sizes.Min()} and the largest is {config.Sizes.Max()}");
+            Console.WriteLine($"The starting amount of wine is {config.InitialWineAmount}");
+            Console.WriteLine($"The total number of tank configurations for transfer input/output is {config.TankLists}");
+            Console.WriteLine($"JSON options provided are: {config.Options}");
         }
 
         public static void Main(string[] args)
         {
-            var tankSizesFileName = args[0];
-            var wineMixFileName = args[1];
-            var optionsFileName = args.Length > 2 ? args[2] : "";
-            Configuration = Configuration.LoadFromFiles(tankSizesFileName, wineMixFileName, optionsFileName);
-
-            var state = new State(Configuration);
-
-            Root = new Transition(null, state, null, null, null);
-            Transitions.Add(Root);
-            
-            // NOTE: used for debugging 
-            OutputValidCombineOperations();
-
-            for (var i = 0; i < 10; ++i)
+            try
             {
-                var sw = Stopwatch.StartNew();
-                Console.WriteLine($"Total transitions considered {Scores.Count}");
-                ComputeTransitions();
+                Console.WriteLine($"Initializing .... ");
+                Configuration? config = null;
+                try
+                {
+                    var tankSizesFileName = args[0];
+                    var wineMixFileName = args[1];
+                    var optionsFileName = args.Length > 2 ? args[2] : Configuration.DefaultOptionsFileName;
+                    config = Configuration.LoadFromFiles(tankSizesFileName, wineMixFileName, optionsFileName);
+                }
+                catch (Exception _)
+                {
+                    ShowUsage(false);
+                    throw;
+                }
 
-                Console.WriteLine("Best transition:  ");
-                Output(Best());
+                OutputConfigurationAnalysis(config);
 
-                Console.WriteLine($"Time elapsed = {sw.Elapsed}");
+                // Test that we can write to the output folder, before running the long process. 
+                var outputFolder = Path.Combine(ExeFolder, config.Options.OutputFolder);
+                if (!Directory.Exists(outputFolder))
+                    Directory.CreateDirectory(outputFolder);
+                var outputBlendFilePath = Path.Combine(outputFolder, config.Options.OutputBlendFileName);
+                var outputStepsFilePath = Path.Combine(outputFolder, config.Options.OutputStepsFileName);
+                var outputJsonFlePath = Path.Combine(outputFolder, config.Options.OutputJsonFileName);
+                outputJsonFlePath = outputJsonFlePath.Replace("{datetime}", DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"));
+
+                // Test writing the files with empty text. 
+                File.WriteAllText(outputBlendFilePath, "");
+                File.WriteAllText(outputStepsFilePath, "");
+                File.WriteAllText(outputJsonFlePath, "");
+
+                // Create the starting state 
+                Console.WriteLine("Starting compute process");
+                var state = State.Create(config);
+                var options = config.Options;
+                var evaluator = new Evaluator(options);
+
+                var transfers = new List<Transfer>();
+                var states = new List<State> { state };
+
+                for (var i = 0; i < options.MaxNumSteps; ++i)
+                {
+                    state.CheckTotalWineIsValid();
+                    state.CheckThatTankAmountsAreValid();
+
+                    var sw = Stopwatch.StartNew();
+                    Console.WriteLine($"Step {i}");
+                    Console.WriteLine(state.BuildString());
+                    var transfer = evaluator.GetBestTransfer(state);
+                    if (transfer == null)
+                    {
+                        Console.WriteLine($"Stopping early, no more transfers found");
+                        break;
+                    }
+
+                    Console.WriteLine($"Found transfer {transfer} in {sw.Elapsed.TotalSeconds:#.00} second");
+                    transfers.Add(transfer);
+                    state = state.Apply(transfer);
+                    states.Add(state);
+                }
+
+                state.CheckTotalWineIsValid();
+                state.CheckThatTankAmountsAreValid();
+
+                Console.WriteLine($"Final state");
+                Console.WriteLine(state.BuildString());
+
+                WriteTransfers(transfers, outputStepsFilePath);
+
+                WriteMix(state.ScaledBestMix, outputBlendFilePath);
+                WriteJson(states, transfers, outputJsonFlePath);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error occurred: {e}");
+                Environment.Exit(1);
             }
         }
     }

@@ -9,12 +9,13 @@ public static class Tests
     [OneTimeSetUp]
     public static void SetUp()
     {
-        Console.SetOut(new DebugWriter());
+        //Console.SetOut(new DebugWriter());
     }
 
-    public static Mix[] Targets = new[]
+    public static Mix[] Targets = 
     {
         new Mix(0.1, 0.15, 0.25, 0.5),
+        //new Mix(0.12, 0.18, 0.2, 0.3, 0.1, 0.04, 0.06 ),
         //new Mix(0.01, 0.09, 0.3, 0.6),
         //new Mix(0.063, 0.234, 0.167, 0.075, 0.023, 0.033, 0.084, 0.063, 0.097, 0.083, 0.007, 0.071),
         //new Mix(0.018, 0.072, 0.04, 0.002, 0.008, 0.062, 0.07, 0.022, 0.049, 0.04, 0.006, 0.04, 0.008, 0.011, 0.106, 0.017, 0.012, 0.162, 0.028, 0.042, 0.055, 0.015, 0.002, 0.079, 0.033),
@@ -24,13 +25,19 @@ public static class Tests
     {
         return new[]
         {
-            new [] { 1, 2, 3, 5, 8, 10, 13, 15, 20, 25 },
-            new [] { 1, 2, 3, 4, 5, 6, 7, 8 },
-            new [] { 1, 2, 2, 3, 4, 4, 5 },
-            new [] { 1, 1, 2, 3, 3, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7 },
-            new [] { 1, 1, 2, 3, 3, 4, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 12, 12, 13, 15, 16, 20, 24, 24, 28 },
-            new [] { 1, 1, 2, 3, 5, 5, 6, 8, 10, 11, 12, 13, 15, 18, 20, 25, 23, 25, 25, 28, 30, 35, 40, 50 },
-            Enumerable.Range(0,100).ToArray(),
+            //new [] { 8, 20, 20, 30, 1, 1, 2, 2, 3, 3, 4, 4, 5, 6, 10, 12, 12, 13, 15, 16, 20, 24, 25, 32 },
+            new [] 
+            { 20, 20, 20, 20, 
+                20, 20, 20, 20,
+                1, 1, 2, 2, 3, 3, 4, 
+                4, 5, 5, 6, 10, 10, 
+                12, 12, 13, 15, 16, 
+                20, 24, 25, 25, 30,
+                30, 32, 40, 40, 60, 80 },
+            //new [] { 1, 1, 2, 3, 3, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7 },
+            //new [] { 1, 1, 2, 3, 3, 4, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 12, 12, 13, 15, 16, 20, 24, 24, 28 },
+            //new [] { 1, 1, 2, 3, 5, 5, 6, 8, 10, 11, 12, 13, 15, 18, 20, 25, 23, 25, 25, 28, 30, 35, 40, 50 },
+            //Enumerable.Range(0,100).ToArray(),
         };
     }
 
@@ -46,129 +53,170 @@ public static class Tests
         return new Configuration(sizes, target, options);
     }
 
-    [Test]
-    [TestCaseSource(nameof(GetInputConfigurations))]
-    public static void OutputCombineSteps(Configuration sizes)
+    public static double ScoreSimpleLookahead(State state, int depth)
     {
-        Console.WriteLine($"Valid combine steps");
-        var i = 0;
-
-        foreach (var step in sizes.ValidTankCombines)
+        var r = state.BestMixDistance;
+        if (depth == 0)
         {
-            Console.WriteLine($"Tank combine {i++} = {step}");
+            return r;
         }
+
+        foreach (var nextState in state.GetNextStates())
+        {
+            if (nextState.BestMixDistance > state.BestMixDistance)
+            //if (nextState.BestMixDistance > r)
+                continue;
+
+            var tmp = ScoreSimpleLookahead(nextState, depth - 1);
+            if (tmp < r)
+                r = tmp;
+        }
+
+        return r;
     }
 
-    [Test]
-    [TestCaseSource(nameof(GetInputConfigurations))]
-    public static void OutputBreakdowns(Configuration sizes)
+    public static void OutputStateAnalysis(State state, bool contents)
     {
-        var g = new Graph(sizes);
-        foreach (var n in g.Nodes)
-        {
-            Console.WriteLine(
-                $"Node tank={n.Tank} size={n.Size} in={n.IncomingEdges.Count} out={n.OutgoingEdges.Count} sets={n.TanksSets.Count}");
-        }
+        Console.WriteLine(state.BuildString(null, true, contents));
 
-        foreach (var n in g.Nodes)
+        var transfers = state.Transfers;
+        Console.WriteLine($"Found {transfers.Count} transfers");
+        var nextStates = transfers.Select(state.Apply).ToList();
+        var best = double.MaxValue;
+        var score = ScoreUsingBest(state);
+        var cntBetter = 0;
+        var cntWorse = 0;
+        var cntBest = 1;
+        foreach (var nextState in nextStates)
         {
-            Console.WriteLine(
-                $"Node has tank={n.Tank} size={n.Size} in={n.IncomingEdges.Count} out={n.OutgoingEdges.Count} sets={n.TanksSets.Count}");
-            foreach (var ts in n.TanksSets)
+            var tmp = ScoreUsingBest(nextState);
+            if (tmp.AlmostEquals(best)) cntBest++;
+            if (tmp < best)
             {
-                Console.WriteLine($"  {ts}");
+                best = tmp;
+                cntBest = 1;
             }
+            if (tmp < score) cntBetter++;
+            if (tmp > score) cntWorse++;
         }
+        Console.WriteLine($"Current score = {score}");
+        Console.WriteLine($"Found {cntBetter} improvements, and {cntWorse} harmful");
+        Console.WriteLine($"Best next score is {best} found {cntBest} instances");
     }
-
-    public static void OutputStateAnalysis(State state)
-    {
-        Console.WriteLine(state.BuildString(null, true, false));
-
-        var ops = state.GetValidOperations().ToList();
-        Console.WriteLine($"Found {ops.Count} immediate operations");
-
-        var combineTree = state.CombineTree().ToList();
-        Console.WriteLine($"Found {combineTree.Count} states reachable via combines only");
-
-        //var opTree = state.OperationTree().ToList();
-        //Console.WriteLine($"Found {opTree.Count} reachable states");
-
-        /*
-        var deltas = state.GetCombineDeltas(target).ToList();
-        var smallestDelta = deltas.MinBy(d => d.Length);
-        var numDeltas = deltas.Count;
-        if (smallestDelta != null)
-        {
-            Console.WriteLine($"Found {numDeltas} deltas, best is {smallestDelta.DeltaMix} with distance {smallestDelta.Length}");
-        }
-        else
-        {
-            Console.WriteLine($"No deltas found");
-        }
-
-        // BUG: the number of transitions reported seems bogus. 
-        var transitions = state.GetTransitions().ToList();
-        Console.WriteLine($"{transitions.Count} transitions found");
-
-        Console.WriteLine($"{totalTanks - usedTanks} add operations found");
-
-        var combinations = state.GetValidTankCombineOperations().ToList();
-        Console.WriteLine($"{combinations.Count} combine operations found");
-
-        var bestCombineTuple = state.BestCombine(target);
-        var bestCombineOp = bestCombineTuple.Item1;
-        var bestCombineMix = bestCombineTuple.Item2;
-        var bestCombineDist = target.BlendDistance(bestCombineMix);
-        Console.WriteLine($"The best combine operation is {bestCombineOp} and would yield {bestCombineMix} with distance {bestCombineDist}");
-
-        var sw = Stopwatch.StartNew();
-        var bestCombineTreeMix = bestCombine?.BestMix;
-        var dist2 = target.BlendDistance(bestCombineTreeMix);
-        Console.WriteLine($"Found {combines.Count} combine operations in {sw.Elapsed} time");
-        Console.WriteLine($"The best mix was {bestCombineTreeMix} with distance {dist2}");
-        */
-    }
-
-    public static double ScoreUsingBestAndAverage(State state)
-        => state.BestMixDistance + state.AverageMixDistance / 1000;
 
     // NOTE: added heuristic so that the best score is even better if in a smaller container. 
     public static double ScoreUsingBest(State state)
         => state.BestMixDistance + (state.BestMix?.Sum ?? 0) / 1000;
 
-    public static double ScoreUsingCombineTree(State state)
+    // NOTE: looking at deltas now. 
+    public static double ScoreUsingBestAndDelta(State state)
     {
-        var tree = state.CombineTree().ToList();
-        if (tree.Count == 0)
-        {
-            return ScoreUsingBest(state);
-        }
-
-        return tree.Select(ScoreUsingBest).Min();
+        var dist = state.BestMixDistance;
+        var deltaDist = 0; // ClosestDistanceToOffset(state);
+        return dist + deltaDist / 100;
     }
 
-    public static Operation? ChooseOperation(State state, Func<State, double> scoringFunc)
+    // Choose the score, based on the best score of the next state
+    // Looking ahead in a greedy manner (only considering overal state improvements)
+    public static double ScoreWithLookahead(State state, double current, int depth, ref int considered)
     {
-        var ops = state.GetValidOperations().ToList();
-        var r = ops.MinBy(op => scoringFunc(state.Apply(op)));
-        Console.WriteLine($"From {ops.Count} operations chose {r}");
+        if (depth == 0)
+            return current;
+
+        var r = current;
+        foreach (var transfer in state.Transfers)
+        {
+            var nextState = state.Apply(transfer);
+            var nextCandidate = ScoreUsingBest(nextState);
+            if (nextCandidate < r)
+                r = nextCandidate;
+            considered++;
+
+            // Only consider improvements on the current score. 
+            if (nextCandidate < current)
+            {
+                var tmp = ScoreWithLookahead(nextState, nextCandidate, depth - 1, ref considered);
+                if (tmp < r) 
+                    r = tmp;
+            }
+        }
+
         return r;
+    }
+
+    // Choose the score, based on the best score of the next state
+    // Looking ahead in a greedy and narrow manner 
+    public static double ScoreWithNarrowLookahead(State state, double score, int depth, ref int considered)
+    {
+        considered++;
+        var r = score;
+        if (depth == 0)
+            return r;
+
+        var nextStates = state.GetNextStates().Select(st => (st, ScoreUsingBest(st))).ToList();
+        nextStates = nextStates.OrderBy(tuple => tuple.Item2).ToList();
+        foreach (var nextState in nextStates.Take(20))
+        {
+            var tmp = ScoreWithNarrowLookahead(nextState.Item1, nextState.Item2, depth - 1, ref considered);
+            if (tmp < r)
+                r = tmp;
+        }
+
+        return r;
+    }
+
+    public static Mix ClosestOffset(State state, Mix mix)
+    {
+        return state.Offsets().MinBy(m => m.DistanceOfNormals(mix));
+    }
+
+    public static double ClosestDistanceToOffset(State state)
+    {
+        return state.Mixes.Min(mix => mix.DistanceOfNormals(ClosestOffset(state, mix)));
+    }
+
+    [Test]
+    [TestCaseSource(nameof(GetInputConfigurations))]
+    public static void TestInputState(Configuration config)
+    {
+        var state = State.Create(config);
+        OutputStateAnalysis(state, false);
+        var score = ScoreUsingBest(state);
+        Console.WriteLine($"Assigned a score of {score}");
+
+        var depth = 2;
+        var considered = 0;
+        var lookahead = ScoreWithNarrowLookahead(state, score, depth, ref considered);
+        Console.WriteLine($"Considered {considered} positions to depth {depth} got lookahead score {lookahead}");
     }
 
     [Test]
     [TestCaseSource(nameof(GetInputConfigurations))]
     public static void Test(Configuration config)
     {
-        var state = new State(config);
+        var state = State.Create(config);
 
-        for (var i = 0; i < 20; ++i)
+        for (var i = 0; i < 10; ++i)
         {
-            OutputStateAnalysis(state);
-            var op = ChooseOperation(state, ScoreUsingCombineTree);
-            if (op == null)
+            Console.WriteLine($"step {i}");
+
+            var transfers = state.Transfers;
+            Console.WriteLine($"Found {transfers.Count} transfer operations");
+            OutputStateAnalysis(state, false);
+
+            //var bestTransfer = transfers.MinBy(t => ScoreUsingBestAndDelta(state.Apply(t)));
+            var bestTransfer = transfers.MinBy(t => ScoreSimpleLookahead(state, 1));
+
+            if (bestTransfer == null)
+            {
+                Console.WriteLine("No more transfers possible");
                 break;
-            state = state.Apply(op);
+            }
+
+            Console.WriteLine($"Applying transfer {bestTransfer}");
+            Console.WriteLine();
+
+            state = state.Apply(bestTransfer);
         }
     }
 
@@ -178,51 +226,4 @@ public static class Tests
     {
         Console.WriteLine($"Found {config.TankLists.Count} individual tank lists");
     }
-
-    [Test]
-    public static void CountReachableStates()
-    {
-        var config = GetInputConfigurations()[1];
-        var state = new State(config);
-
-        for (var i = 3; i < 10; ++i)
-        {
-            var sw = new Stopwatch();
-            Debug.WriteLine($"Considering all reachable states to depth {i}");
-            var cnt = 0;
-            var best = state;
-            foreach (var tmp in state.OperationTree(i))
-            {
-                cnt++;
-                if (cnt % 50000 == 0)
-                {
-                    Debug.WriteLine($"State number {cnt}");
-                    //Debug.WriteLine(tmp);
-                }
-
-                if (tmp.BestMixDistance < best.BestMixDistance)
-                    best = tmp;
-            }
-
-            Debug.WriteLine($"Best match found of {cnt} considered");
-            Debug.WriteLine(best);
-        }
-    }
-
-    [Test]
-    public static void SomethingWrongWithDistance()
-    {
-        var mix = new Mix(0.6666666666666666, 0, 0, 0.3333333333333333) * 2;
-        var target = new Mix(0.1, 0.15, 0.25, 0.5);
-
-        Console.WriteLine(
-            $"target={target} length={target.Length} normal={target.Normal} normal length={target.Normal.Length}");
-        Console.WriteLine($"mix={mix} length={mix.Length} normal={mix.Normal} length={target.Normal.Length}");
-        Console.WriteLine(
-            $"target to mix blend distance = {target.DistanceOfNormals(mix)} regular distance {target.Distance(mix)}");
-
-        Console.WriteLine($"target - mix = {target - mix}");
-        Console.WriteLine($"mix - target = {mix - target}");
-    }
-
 }

@@ -141,3 +141,159 @@ Tank 9 has size 25 and contains (1, 0, 0, 0) of distance 1.288
 Found 0 immediate operations
 Found 0 states reachable via combines only
 From 0 operations chose 
+
+//==
+
+Computing possible operations	is the longest thing right now. 
+
+Rather than filter a big list, I might just want to recreate the function. 
+
+This would probably be much faster. 
+
+* I only want to propose tank lists that contain unoccupied tanks. 
+* I can stop once a target volume is hit. 
+* I can make it multi-threaded
+* It might be a bit easier.
+* I am considering different states multiple times. 
+* Not that many though. 
+* Maybe I can remove from consideration operations 
+that make things worse. 
+
+It took 2 minutes. 
+
+After a bit of optimization it is down to 1:15. 
+
+I could also do a bit of grouping. 
+Given a tank, find out what tank lists it is contained in. 
+
+HOWEVER, this might not be faster, because in that layout 
+tanklists are listed multiple times. 
+
+But there are 2424 tank lists for 20 tanks. 
+
+The idea is that that I can loop through the occupied tanks and then figure out 
+where can they go to real quick. 
+
+Is there someway to cache a state? Or to say ... look transferring with X 
+is going to give me a score.
+
+Do I assign a bonus for having more tanks? 
+
+//==
+
+The thing is that I quickly know if combining tanks is a good idea. 
+
+Look at the tanks ... if the relative mix is good ... keep it.
+Otherwise, don't! 
+
+This significantly reduces the amount of "thinking" that we have to do. 
+
+//==
+
+Is there something I can do with looking at the values.
+
+In theory if blending them would be improvement, then that is good, 
+somehow I can blend it. 
+
+The idea is that maybe the "halfway" amount is closer than both of them. 
+
+But what if we just want it be a bit closer. 
+
+The other idea then is to bring the averages. 
+
+What I want to convey is the fact that having some amount from somewhere else is good. 
+
+The distance between the current and the target is knowable as well. 
+
+So a secondary score could be ... best delta. 
+
+//==
+
+The number of tanks holding wine always adds up to the same number. 
+
+Given a starting configuration, we can figure out what tank configurations 
+are possible and which ones are not reachable. 
+
+Maybe considering all possibilities and removing some. 
+
+Making the best wine worse should be NOT an option. 
+
+//==
+
+Making the best blend worse, should never be an option. 
+
+Not improving the delta, or the average. 
+Nor sure about that neither. 
+
+Restricting to 2<=>2 is easier for now. 
+
+step 39
+Found 979 transfer operations
+State 70397 depth=39 volume=78 tanks=10/24
+Target is (0.1, 0.15, 0.25, 0.5)
+Best mix is (0.208, 0.274, 0.521, 0.781) of distance 0.125502
+Average mix is (0.174, 0.594, 0.436, 0.654) of distance 0.39221
+
+Actually restricting to 3<=>3.
+
+Found a problem with the delta computation.
+
+//==
+
+step 39
+Found 979 transfer operations
+State 70397 depth=39 volume=78 tanks=10/24
+Target is (0.1, 0.15, 0.25, 0.5)
+Delta target is (-0.017, -0.003, -0.042, 0.062)
+Best mix is (0.208, 0.274, 0.521, 0.781) of distance 0.125502
+Average mix is (0.19, 0.476, 0.476, 0.714) of distance 0.26549
+Best delta mix is (0.211, 0.22, 0.528, 0.792) of distance 1.186419
+
+//==
+
+Maybe I should evaluate things looking at pairs.
+
+Finding the average of each pair. The best average should be something important. 
+
+//==
+
+step 5
+Found 1129 transfer operations
+State 9269 depth=5 volume=82 tanks=8/24
+Target is (0.12, 0.18, 0.2, 0.3, 0.1, 0.04, 0.06)
+Best mix is (0.384, 0.439, 0.439, 0.659, 0.048, 0.077, 0.153) of distance 0.216639
+Average mix is (0.19, 0.475, 0.475, 0.713, 0.024, 0.024, 0.048) of distance 0.258253
+
+//==
+
+step 5
+Found 1129 transfer operations
+State 9269 depth=5 volume=82 tanks=8/24
+Target is (0.12, 0.18, 0.2, 0.3, 0.1, 0.04, 0.06)
+Best mix is (0.384, 0.439, 0.439, 0.659, 0.048, 0.077, 0.153) of distance 0.216639
+Average mix is (0.19, 0.475, 0.475, 0.713, 0.024, 0.024, 0.048) of distance 0.258253
+
+//==
+
+Mixes are slow. Precomputing stuff would be helpful. I could even precompute the distance
+from X. 
+
+Note: choosing a transfer is just a question of asking: what mix would the transfer create, and 
+what is that distance.
+
+This is a LOT faster.
+
+//==
+
+* Use dynamic programming to compute permutations.
+* Check error conditions for inpuis
+* Report on errors 
+* Output usage text
+* Don't consider degenerate transfer cases (where input tank volumes and output tank volumes are the same )
+	* This algorithm would eliminate A -> B.
+* Look for stuck cases 
+
+- Reduce to 10 steps
+- Output the normalized target
+- Output the json 
+- The final blend should be expressed in terms of a value 

@@ -4,6 +4,11 @@ namespace WineMixerTests;
 
 public static class TestUtilities
 {
+    public static void SaveDefaultOptions()
+    {
+
+    }
+
     public static Random rng = new Random();
 
     public static Mix CreateRandomMix(int cnt)

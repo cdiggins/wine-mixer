@@ -14,73 +14,29 @@ public class Configuration
     {
         Target = target;
         Sizes = sizes;
+        if (sizes.Count < NumWines)
+            throw new Exception("The number of starting tanks has to be equal to or greater than the number of wines");
         Options = options;
-        ValidTankSplits = ComputeValidTankSplits().ToList();
-        ValidTankCombines = ComputeValidTankCombines().ToList();
-        ValidAddWines = ComputeAddWines().ToList();
         TankLists = ComputeTankLists(new TankList(0), 0, Options.MaxInputOrOutputTanks).ToList();
         Volume = Sizes.Sum();
+        EmptyMix = new Mix(Enumerable.Repeat(0.0, NumWines).ToArray());
+        InitialWineAmount = sizes.Take(NumWines).Sum();
     }
 
     public IReadOnlyList<int> Sizes { get; }
-    public int Count => Sizes.Count;
+    public int NumTanks => Sizes.Count;
     public int NumWines => Target.Count;
     public int Volume { get; }
     public Mix Target { get; }
+    public Mix EmptyMix { get; }
     public Options Options { get; }
+    public const string DefaultOptionsFileName = "options.json";
+    public double InitialWineAmount { get; }
 
-    public IReadOnlyList<TankSplit> ValidTankSplits { get; }
-    public IReadOnlyList<TankCombine> ValidTankCombines { get; }
-    public IReadOnlyList<AddWine> ValidAddWines { get; }
     public IReadOnlyList<TankList> TankLists { get; }
 
     public int this[int i]
         => Sizes[i];
-
-    public bool IsValidTankCombine(TankCombine tankCombine)
-        => Sizes[tankCombine.Output] == Sizes[tankCombine.InputA] + Sizes[tankCombine.InputB];
-
-    public bool IsValidTankSplit(TankSplit tankSplit)
-        => Sizes[tankSplit.Input] == Sizes[tankSplit.OutputA] + Sizes[tankSplit.OutputB];
-
-    // Complexity O(N^3) where N = number of tanks, but called only once 
-    public IEnumerable<TankSplit> ComputeValidTankSplits()
-    {
-        for (var i = 0; i < Count; ++i)
-        for (var j = i + 1; j < Count; ++j)
-        for (var k = 0; k < Count; ++k)
-        {
-            if (i != j && i != k && j != k)
-            {
-                var ts = new TankSplit(i, j, k);
-                if (IsValidTankSplit(ts))
-                    yield return ts;
-            }
-        }
-    }
-
-    // Complexity O(N^3) where N = number of tanks, but called only once 
-    public IEnumerable<TankCombine> ComputeValidTankCombines()
-    {
-        for (var i = 0; i < Count; ++i)
-        for (var j = i + 1; j < Count; ++j)
-        for (var k = 0; k < Count; ++k)
-        {
-            if (i != j && i != k && j != k)
-            {
-                var tc = new TankCombine(i, j, k);
-                if (IsValidTankCombine(tc))
-                    yield return tc;
-            }
-        }
-    }
-
-    public IEnumerable<AddWine> ComputeAddWines()
-    {
-        for (var i = 0; i < Count; ++i)
-        for (var j = 0; j < NumWines; ++j)
-            yield return new AddWine(i, j);
-    }
 
     public double TargetDistance(Mix? mix)
     {
@@ -103,6 +59,13 @@ public class Configuration
             var optionsText = File.ReadAllText(optionsFileName);
             options = JsonSerializer.Deserialize<Options>(optionsText);
         }
+        else
+        {
+            if (string.IsNullOrEmpty(optionsFileName))
+                optionsFileName = DefaultOptionsFileName;
+            var optionsText = JsonSerializer.Serialize(options, new JsonSerializerOptions() { WriteIndented = true });
+            File.WriteAllText(optionsFileName, optionsText);
+        }
 
         return LoadTankSizesFromFile(tankSizeFileName, target, options);
     }
@@ -115,7 +78,7 @@ public class Configuration
         if (depth == maxDepth)
             yield break;
 
-        for (var i = parent.Last + 1; i < Count; i++)
+        for (var i = parent.Last + 1; i < NumTanks; i++)
         {
             var vol = parent.Volume + Sizes[i];
             var tmp = parent.Tanks.ToList();
@@ -130,4 +93,4 @@ public class Configuration
             }
         }
     }
-}
+}   

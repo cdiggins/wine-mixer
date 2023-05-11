@@ -1,0 +1,33 @@
+﻿# Usage: wine-mixer.exe <tanksizes> <winemix> [<options>]
+
+Wine-mixer.exe is a program that generates a blending process to achieve a desired proportions of wines 
+given a set number of tanks with user defined sizes. 
+
+## Inputs
+
+This program takes two mandatory command-line arguments, and an optional third command-line argument. 
+
+	<tanksizes> - A .txt file that contains a line of whole numbers, one on each line, that specifies 
+	the size of each tank. The first N tanks are assumed to be filled with the N wines, all other tanks are 
+	assumed empty. 
+
+	<winemix> - A .txt file that contains a list of decimal numbers (using a dot as the decimal separator), one 
+	on each line, that specifies the relative amount of each wine desired. 
+
+	<options> - An optional .json file that contains options for controlling the behavior of the program. If none
+	is provided then the program will use a file in the executable directory named "options.json" if found, 
+	otherwise it will generate a default file called "options.json" and place it in the executable directory. 
+
+## Outputs
+
+This program will output to the standard output detailed information about the blending process as it happens. 
+
+This program will also create three files in a folder by default called "output". The output folder
+and the file names can be controlled via options.
+
+	<output-{datetime}.json> - a JSON file with a unique date stamped name that expresses detailed information 
+	about the process, and the state of the system at each step. 
+
+	<steps.txt> - the steps of the blending process in a simple text format
+
+	<result.txt> - the relative proportions of the output tank, normalized to add up to 1.0. 

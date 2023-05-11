@@ -15,19 +15,24 @@ public class Mix
     public Mix(IReadOnlyList<double> values)
     {
         Values = values;
-        Sum = Values.Sum();
         var sumSqrs = 0.0;
         for (var i = 0; i < Values.Count; i++)
         {
-            sumSqrs += Values[i] * Values[i];
+            var t = Values[i];
+            Sum += t;
+            sumSqrs += t * t;
         }
         Length = Math.Sqrt(sumSqrs);
+        Normal = Length.AlmostEquals(0) ? this : Length.AlmostEquals(1) ? this : this / Length;
     }
 
     public IReadOnlyList<double> Values { get; }
     public int Count => Values.Count;
     public double Sum { get; } 
     public double Length { get; }
+    public Mix Normal { get; }
+
+    public Mix SumOfOne => Length.AlmostEquals(0) ? this : Length.AlmostEquals(1) ? this : this / Sum;
 
     public double Distance(Mix? other) 
         => other == null 
@@ -67,9 +72,6 @@ public class Mix
 
     public static Mix operator /(Mix mix, double x)
         => Multiply(mix, 1.0 / x);
-
-    public Mix Normal 
-        => Length.AlmostEquals(0) ? this : this / Length;
 
     public static Mix Multiply(Mix mix, double x)
     {
