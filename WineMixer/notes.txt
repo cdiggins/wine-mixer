@@ -297,3 +297,61 @@ This is a LOT faster.
 - Output the normalized target
 - Output the json 
 - The final blend should be expressed in terms of a value 
+
+//==
+
+First run
+Found 3523970 permutations adding up to 16 in 3.53 seconds
+Number of tank indices in lookup 16
+Total entries in lookup 135
+Naive run
+Found 3523970 permutations adding up to 16 in 4.37 seconds
+Second run
+Found 3523970 permutations adding up to 16 in 3.86 seconds
+
+//==
+
+* Even in release mode, the result is the same.
+* The current solution has the problem that it reuses tank sizes.
+* The dynamic programming table does nothing to reduce complexity.
+* THere are a lot of permutations. 
+* This is embarassing.
+* Maybe it is useful if:
+	* Just counting permutations
+	* If I filtered the data? 
+* There are a ton of things created. 
+* BUT ... we can't have repetition of tanks. 
+
+//==
+
+
+First run
+Found 252853 permutations adding up to 20 in .29 seconds
+Number of tank indices in lookup 20
+Total entries in lookup 664389
+Naive run
+Found 252853 permutations adding up to 20 in 1931.93 seconds
+
+//== 
+
+This is the combination sum problem.
+It is harder to solve than it looks. 
+
+The "contains" issue can be solved by checking off the tanks that are already used, and 
+not reusing them. 
+
+What I ran into a problem with is the fact that I am reusing values ...
+
+sometimes I'll say "2 3 4" and other times "3 2 4" etc. 
+
+Given the list of tanks that add up to X, how would I do it? 
+
+Maybe the dynamic programming should just be used to compute combinations? 
+
+The thing is that if I have combinations ... for up to 30.
+
+The current idea is that: 
+I look at all tanks. Then for each tank, I look at the combinations adding up to it. 
+Now I could eliminate those combinations that are not relevant by sorting them. 
+
+If I sort the lists, they will be a bit easier to detect if I am adding an element 

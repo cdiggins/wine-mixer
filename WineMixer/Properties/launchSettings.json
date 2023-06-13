@@ -8,6 +8,9 @@
       "commandName": "Project",
       "commandLineArgs": "tanks.txt recipe.txt",
       "workingDirectory": "C:\\Users\\cdigg\\git\\wine-mixer\\WineMixer\\input"
+    },
+    "Benchmark": {
+      "commandName": "Project"
     }
   }
 }

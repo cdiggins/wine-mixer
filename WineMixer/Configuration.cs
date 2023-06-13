@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.Json;
 
 namespace WineMixer;
@@ -18,7 +17,9 @@ public class Configuration
         if (sizes.Count < NumWines)
             throw new Exception("The number of starting tanks has to be equal to or greater than the number of wines");
         Options = options;
+        var sw = Stopwatch.StartNew();
         TankLists = ComputeTankLists(new TankList(0), 0, Options.MaxInputOrOutputTanks).ToList();
+        Debug.WriteLine($"Found {TankLists.Count} tanks, Time elapsed = {sw.Elapsed.TotalSeconds:0.####}");
         Volume = Sizes.Sum();
         EmptyMix = new Mix(Enumerable.Repeat(0.0, NumWines).ToArray());
         InitialWineAmount = sizes.Take(NumWines).Sum();

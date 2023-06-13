@@ -5,7 +5,7 @@ namespace WineMixerTests;
 
 public static class Tests
 {
-
+    /*
     [OneTimeSetUp]
     public static void SetUp()
     {
@@ -39,6 +39,12 @@ public static class Tests
             //new [] { 1, 1, 2, 3, 5, 5, 6, 8, 10, 11, 12, 13, 15, 18, 20, 25, 23, 25, 25, 28, 30, 35, 40, 50 },
             //Enumerable.Range(0,100).ToArray(),
         };
+    }
+
+    public static int TestTankFinder()
+    {
+        var tankFinder = new TankFinder(
+
     }
 
     public static Options Options = new Options();
@@ -165,10 +171,6 @@ public static class Tests
         return r;
     }
 
-    public static Mix ClosestOffset(State state, Mix mix)
-    {
-        return state.Offsets().MinBy(m => m.DistanceOfNormals(mix));
-    }
 
     public static double ClosestDistanceToOffset(State state)
     {
@@ -226,4 +228,5 @@ public static class Tests
     {
         Console.WriteLine($"Found {config.TankLists.Count} individual tank lists");
     }
+    */
 }

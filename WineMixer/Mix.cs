@@ -1,4 +1,6 @@
-﻿namespace WineMixer;
+﻿using System.Globalization;
+
+namespace WineMixer;
 
 /// <summary>
 /// A mix is a vector representing how much of each wine is stored in a tank,
@@ -100,7 +102,7 @@ public class Mix
         var r = new List<double>();
         foreach (var line in lines)
         {
-            var amt = double.Parse(line);
+            var amt = double.Parse(line.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture);
             r.Add(amt);
         }
         return new Mix(r);

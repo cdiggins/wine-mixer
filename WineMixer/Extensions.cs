@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace WineMixer;
+﻿namespace WineMixer;
 
 public static class Extensions
 {

@@ -16,8 +16,8 @@ public class Evaluator
     public double Evaluate(State state, Transfer transfer) 
         => EvaluateByTransfers(state.Apply(transfer));
 
-    public Transfer ChooseBestTransfer(IEnumerable<(Transfer, double)> choices) 
-        => choices.MinBy(tuple => tuple.Item2).Item1;
+    public Transfer ChooseBestTransfer(List<(Transfer, double)> choices)
+        => choices.Count > 0 ? choices.MinBy(tuple => tuple.Item2).Item1 : null;
 
     public Transfer GetBestTransfer(State state)
         => ChooseBestTransfer(Options.RunInParallel 

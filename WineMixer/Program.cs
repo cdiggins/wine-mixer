@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using BenchmarkDotNet.Running;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 
 namespace WineMixer
 {
@@ -31,7 +33,7 @@ namespace WineMixer
 
         public static void WriteMix(Mix mix, string fileName)
         {
-            File.WriteAllLines(fileName, mix.Values.Select(v => $"{v:#.000}"));
+            File.WriteAllLines(fileName, mix.Values.Select(v => $"{v:#.00000}"));
         }
 
         public static void WriteTransfers(IEnumerable<Transfer> transfers, string fileName)
@@ -71,6 +73,12 @@ namespace WineMixer
 
         public static void Main(string[] args)
         {
+            if (args.Length == 0)
+            {
+                BenchmarkRunner.Run<Benchmarks>();
+                return;
+            }
+
             try
             {
                 Console.WriteLine($"Initializing .... ");
