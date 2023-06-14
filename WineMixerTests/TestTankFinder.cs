@@ -49,7 +49,7 @@ namespace WineMixerTests
             TankSizes = TankSizes.OrderByDescending(x => x).ToArray();
 
             {
-                var t = new TankFinder(TankSizes, Volume);
+                var t = new TankFinder(TankSizes);
                 Console.WriteLine("First run");
                 var sw = Stopwatch.StartNew();
                 const int maxCount = 5;

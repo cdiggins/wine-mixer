@@ -2,7 +2,7 @@
 
 public class TankFinder
 {
-    public TankFinder(IReadOnlyList<int> tankSizes, int maxSize)
+    public TankFinder(IReadOnlyList<int> tankSizes)
         => TankSizes = tankSizes;
 
     public IReadOnlyList<int> TankSizes { get; }

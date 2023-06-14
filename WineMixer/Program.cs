@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics;
-using BenchmarkDotNet.Running;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System.Text.Json;
 
 namespace WineMixer
 {
+
     public class Program
     {
         public static string ExeFolder =
@@ -15,6 +15,7 @@ namespace WineMixer
         {
             // Fall-back text for usage 
             var usageText = "Usage: wine-mixer.exe <tanksizes> <winemix> [<optionsfilename>]";
+            
             try
             {
                 // Try loading a more elaborate usage file 
@@ -41,9 +42,10 @@ namespace WineMixer
             File.WriteAllLines(fileName, transfers.Select(t => t.ToString()));
         }
 
-        public static void WriteJson(IReadOnlyList<State> states, IReadOnlyList<Transfer> transfers, string fileName)
+        public static void WriteJson(Session session, string fileName)
         {
-            // TODO: implemetn this. 
+            var sessionText = JsonSerializer.Serialize(session, new JsonSerializerOptions() { WriteIndented = true });
+            File.WriteAllText(fileName, sessionText);
         }
 
         public static void OutputConfigurationAnalysis(Configuration config)
@@ -64,7 +66,7 @@ namespace WineMixer
             var bestMix = state.BestMix();
             var dist = state.TargetDistance(bestMix);
             Console.WriteLine($"Target mix is {state.Configuration.Target}");
-            Console.WriteLine($"Best mix   is {bestMix.SumOfOne}");
+            Console.WriteLine($"Best mix is {bestMix.SumOfOne}");
             Console.WriteLine($"Distance is {dist:#.0000}");
 
             Console.WriteLine($"Original Target mix is {state.Configuration.OriginalTarget}");
@@ -73,12 +75,6 @@ namespace WineMixer
 
         public static void Main(string[] args)
         {
-            if (args.Length == 0)
-            {
-                BenchmarkRunner.Run<Benchmarks>();
-                return;
-            }
-
             try
             {
                 Console.WriteLine($"Initializing .... ");
@@ -102,6 +98,7 @@ namespace WineMixer
                 var outputFolder = Path.Combine(ExeFolder, config.Options.OutputFolder);
                 if (!Directory.Exists(outputFolder))
                     Directory.CreateDirectory(outputFolder);
+
                 var outputBlendFilePath = Path.Combine(outputFolder, config.Options.OutputBlendFileName);
                 var outputStepsFilePath = Path.Combine(outputFolder, config.Options.OutputStepsFileName);
                 var outputJsonFlePath = Path.Combine(outputFolder, config.Options.OutputJsonFileName);
@@ -153,7 +150,14 @@ namespace WineMixer
                 var bestMix = state.BestMix();
                 var finalMix = config.ScaleMixToOriginalTarget(bestMix);
                 WriteMix(finalMix, outputBlendFilePath);
-                WriteJson(states, transfers, outputJsonFlePath);
+
+                var session = new Session()
+                {
+                    States = states,
+                    Transfers = transfers,
+                    Configuration = config,
+                };
+                WriteJson(session, outputJsonFlePath);
             }
             catch (Exception e)
             {
