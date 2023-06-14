@@ -70,7 +70,7 @@ namespace WineMixer
             Console.WriteLine($"Distance is {dist:#.0000}");
 
             Console.WriteLine($"Original Target mix is {state.Configuration.OriginalTarget}");
-            Console.WriteLine($"Scaled best mix     is {state.Configuration.ScaleMixToOriginalTarget(bestMix)}");
+            Console .WriteLine($"Scaled best mix     is {state.Configuration.ScaleMixToOriginalTarget(bestMix)}");
         }
 
         public static void Main(string[] args)
