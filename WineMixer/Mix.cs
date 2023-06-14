@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text.Json.Serialization;
 
 namespace WineMixer;
 
@@ -32,8 +33,11 @@ public class Mix
     public int Count => Values.Count;
     public double Sum { get; } 
     public double Length { get; }
-    public Mix Normal { get; }
 
+    [JsonIgnore]
+    public Mix Normal { get; }
+    
+    [JsonIgnore]
     public Mix SumOfOne => Length.AlmostEquals(0) ? this : Length.AlmostEquals(1) ? this : this / Sum;
 
     public double Distance(Mix other) 

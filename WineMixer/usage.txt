@@ -4,7 +4,7 @@ Wine-mixer.exe is a program that generates a blending process to achieve a desir
 given a set number of tanks with user defined sizes. 
 
 Note: on Mac systems you have to run this program with elevated privileges (e.g., using sudo)
-because it creates an output folder. 
+in order to create an output folder. 
 
 ## Inputs
 

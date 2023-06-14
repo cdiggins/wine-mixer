@@ -13,14 +13,20 @@ public class Evaluator
     public double EvaluateByMix(State state)
         => state.Mixes.Min(state.TargetDistance);
 
-    public double Evaluate(State state, Transfer transfer) 
-        => EvaluateByTransfers(state.Apply(transfer));
+    public Transfer GetBestTransfer(State state)
+    {
+        var candidates = state.Transfers
+            .GroupBy(t => EvaluateByMix(state.Apply(t)))
+            .MinBy(g => g.Key)
+            .ToList();
+        var results = candidates
+            .GroupBy(t => EvaluateByTransfers(state.Apply(t)))
+            .MinBy(g => g.Key)
+            .ToList();
+        Console.WriteLine($"Considered {state.Transfers.Count}, found {candidates.Count} candidates, and {results.Count} results");
+        return results.First();
+    }
 
     public Transfer ChooseBestTransfer(List<(Transfer, double)> choices)
         => choices.Count > 0 ? choices.MinBy(tuple => tuple.Item2).Item1 : null;
-
-    public Transfer GetBestTransfer(State state)
-        => ChooseBestTransfer(Options.RunInParallel 
-            ? state.Transfers.AsParallel().Select(t => (t, Evaluate(state, t))).ToList() 
-            : state.Transfers.Select(t => (t, Evaluate(state, t))).ToList());
 }

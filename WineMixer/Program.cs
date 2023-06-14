@@ -101,13 +101,10 @@ namespace WineMixer
 
                 var outputBlendFilePath = Path.Combine(outputFolder, config.Options.OutputBlendFileName);
                 var outputStepsFilePath = Path.Combine(outputFolder, config.Options.OutputStepsFileName);
-                var outputJsonFlePath = Path.Combine(outputFolder, config.Options.OutputJsonFileName);
-                outputJsonFlePath = outputJsonFlePath.Replace("{datetime}", DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"));
 
                 // Test writing the files with empty text. 
                 File.WriteAllText(outputBlendFilePath, "");
                 File.WriteAllText(outputStepsFilePath, "");
-                File.WriteAllText(outputJsonFlePath, "");
 
                 // Create the starting state 
                 Console.WriteLine("Starting compute process");
@@ -155,9 +152,10 @@ namespace WineMixer
                 {
                     States = states,
                     Transfers = transfers,
-                    Configuration = config,
+                    TankSizes = config.Sizes.ToList(),
+                    TargetMix = config.OriginalTarget.Values.ToList(),
+                    Options = config.Options,
                 };
-                WriteJson(session, outputJsonFlePath);
             }
             catch (Exception e)
             {

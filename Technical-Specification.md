@@ -1,5 +1,5 @@
 # ALGOSUP Project 5 2023
-## Technical Specification (Draft May 16th) 
+## Technical Specification (Draft June 14th) 
 
 # Audience
 
@@ -78,22 +78,21 @@ Three text files
 
 * Result.txt – a list of wine percentages at the end of the process 
 * Steps.txt – a list of steps describing the process
-* Output<timetamp>.json – a time stamped file containing the input data and result data  	
 
 ## Non-Requirements / Out of scope
+
 * Graphical user interface 
 * History of running the application
 * Security and passwords  
 * “Previous use history” of tanks
 * Blending data “notes from the tasting team”
-* Data stored in a separate database – JSON files will be output that can be used as records
 * Security concerns
 
 ## Operating Requirements: 
 
 * Should be able to compute a recipe in under 60 minutes with 
-o	400 wine blends
-o	300 tanks
+	* 400 wine blends
+	* 300 tanks
 
 ## Assumptions
 * It doesn’t matter what the specified wine amounts add up to (1, 100, other) 
@@ -105,7 +104,9 @@ o	300 tanks
 * Identifying an optimal result may not be possible, we are satisfied with good enough. 
 
 ## Configurable Options
+
 The following are ideas for what could be considered configurable options. They are not obligatory. 
+
 * Whether to optimize for minimum waste or not
 * To run the program in parallel or not
 * Verbosity of output 
@@ -114,14 +115,18 @@ The following are ideas for what could be considered configurable options. They 
 * The maximum number of input and output tanks can be considered together in a blend.
 
 ## Key Functions, Operations, and Algorithms 
+
 Some of the key operations that the software will perform and that need to be represented via functions are: 
+
 * Evaluating the list of possible transfers for a given tank 
 * Evaluating the “closeness” of two blends of wines – this is performed by normalizing the blend in each mix (using the vector normal function for N dimension) and performing a Euclidean distance operation. 
 * Compute a score for two system states to choose which one is better.
 * Quickly compute which tanks add up to a given amount: a problem known as the combination sum problem. 
 
 ## Code Design Principles
+
 The following are the coding design principles: 	
+
 * Rely minimally on third party libraries. 
 * Minimize use of mutable data types – when systems can change during execution it makes reasoning about them very hard, and can hinder parallelism. 
 * Enable system to evaluate possible states in parallel. 
@@ -149,12 +154,15 @@ that could benefit from further research and could help guide the implementation
 * Knowing what tank combinations add up to a particular value might optimize the process of figuring out transition possibilities. 
 * Sometimes random searching a tree of possibilities might be good to prevent the system from getting stuck in local minima. 
 * A deeper lookahead, even if all cases can’t be considered might still be desirable. 
+
 ### Proven Hypotheses
+
 * A transfer from one tank to a single other tank does not change worth considering.
 * Some tanks are not reachable and can be removed from consideration.  
 * The set of tank lists that can be used in any transfer can be pre-filtered. 
 
 ## Main Classes
+
 * Configuration – Data set up on program initialization based on inputs from user that don’t change. Contains: list of tank sizes, the target mix, and configuration options.
 * Configuration Options – easily serialized set of values used to control the parameters of operation, such as heuristics.
 * Mix – a list of numbers corresponding to the amount of each wine in the tank 
@@ -163,6 +171,7 @@ that could benefit from further research and could help guide the implementation
 * Transfer – contains an input tank list and output tank list. Used for considering possible steps, and storing the list of chosen steps to arrive at the final state. 
 
 ## Challenge
+
 * There are extremely large numbers of operations that are possible from any point in the system. 
 * The number of combinations of tanks possible is 2^N. The number of combinations of tanks that add up to a particular volume is less than that, but figuring them out in a reasonable amount of time is still long. 
 * It can take a long time to evaluate the score of a position (look at the mix in each tank and compute the distance from the target). 
@@ -172,7 +181,8 @@ that could benefit from further research and could help guide the implementation
 * There does not seem to be any overlapping sub-problem and optimal substructure that would allow us to find a solution via dynamic programming. 
 * Some algorithms are fine for small inputs but take far too long for long inputs. An iterative approach that takes into account a maximum time length could be desirable.
 
-## Possible Bugs 
+## Possible Bugs
+
 * The system may accumulate error causing the amount of wine to fluctuate
 * A transfer may specify a source tank that is empty (or that does not exist)
 * A transfer may specify a target tank that is not empty (or that does not exist)
@@ -183,6 +193,7 @@ that could benefit from further research and could help guide the implementation
 * The system may get stuck and not improve the current wine. 
 
 ## Development Process
+
 * Develop a prototype console application. 
 * Write some unit tests. 
 * Create some sample input files. 
@@ -190,7 +201,6 @@ that could benefit from further research and could help guide the implementation
 * Assure that the program does not generate invalid intermediate steps using asserts and explicit error checking. 
 * Develop a more complex solution based on creating a lookahead tree: 
 	* evaluate a state based on the best reachable state N moves in the future 
-
 * Experiment and Optimize to Improve Scalability 
 	* Explore the limitations of the algorithm with different sizes of inputs. 
 	* Try different heuristics to simplify and reduce the problem space
