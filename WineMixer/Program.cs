@@ -51,8 +51,8 @@ namespace WineMixer
         public static void OutputConfigurationAnalysis(Configuration config)
         {
             Console.WriteLine($"Configuration analysis");
-            Console.WriteLine($"The target blend is {config.Target} has {config.NumWines} components and adds up to {config.Target.Sum}");
             Console.WriteLine($"The original target blend was {config.OriginalTarget} and added up to {config.OriginalTarget}");
+            Console.WriteLine($"The target blend is {config.Target} has {config.NumWines} components and adds up to {config.Target.Sum}");
             Console.WriteLine($"The number of starting tanks is {config.NumTanks}");
             Console.WriteLine($"The smallest tank is {config.Sizes.Min()} and the largest is {config.Sizes.Max()}");
             Console.WriteLine($"The starting amount of wine is {config.InitialWineAmount}");
@@ -68,8 +68,13 @@ namespace WineMixer
             Console.WriteLine($"Best mix is {bestMix.SumOfOne}");
             Console.WriteLine($"Distance is {dist:#.0000}");
 
-            Console.WriteLine($"Original Target mix is {state.Configuration.OriginalTarget}");
-            Console .WriteLine($"Scaled best mix     is {state.Configuration.ScaleMixToOriginalTarget(bestMix)}");
+            var sw = Stopwatch.StartNew();
+            Console.WriteLine($"Computing transfers ...");
+            var cnt = state.Transfers.Count;
+            Console.WriteLine($"Found {cnt} transfers in {sw.Elapsed.TotalSeconds:#.0000}");
+
+            //Console.WriteLine($"Original Target mix is {state.Configuration.OriginalTarget}");
+            //Console.WriteLine($"Scaled best mix     is {state.Configuration.ScaleMixToOriginalTarget(bestMix)}");
         }
 
         public static void Main(string[] args)

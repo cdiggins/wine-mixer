@@ -73,7 +73,7 @@ public class State
     public Mix this[int i]
         => Contents[i];
 
-    public double GetTankSize(int i)
+    public int GetTankSize(int i)
         => Configuration[i];
 
     public double TargetDistance(Mix mix) 
@@ -88,12 +88,34 @@ public class State
         {
             _transfers = new List<Transfer>();
 
+            // Make sure we don't consider two empty tanks of the same size! 
+            // We do this by creating a boolean array equivalent to the number of tanks
+            var validOutputTanks = new bool[NumTanks];
+            for (var i = 0; i < NumTanks; ++i)
+            {
+                if (IsOccupied(i))
+                    continue;
+                
+                // Check that there is no other tank that is being considered
+                // that has the same size.  
+                var validOutputTank = true;
+                for (var j = 0; j < i; ++j)
+                {
+                    if (validOutputTanks[j] && GetTankSize(j) == GetTankSize(i))
+                        validOutputTank = false;
+                }
+                validOutputTanks[i] = validOutputTank;
+            }
+
             var srcTankFinder = new TankFinder(sizes, IsOccupied, maxCount);
-            var destTankFinder = new TankFinder(sizes, IsUnoccupied, maxCount);
+            var destTankFinder = new TankFinder(sizes, i => validOutputTanks[i], maxCount);
 
             var destLookup = new Dictionary<int, List<TankList>>();
 
             var srcTankLists = srcTankFinder.GetAllPermutations().ToList();
+
+            //Console.WriteLine($"Found {srcTankLists.Count} possible input configurations");
+            //Console.WriteLine($"Found {validOutputTanks.Count(x => x)} valid output tanks");
 
             foreach (var occ in srcTankLists)
             {
@@ -151,7 +173,7 @@ public class State
         foreach (var inputTank in transfer.Inputs.Tanks)
             newContents[inputTank] = null;
 
-        var totalVolume = transfer.Outputs.Volume;
+        var totalVolume = (double)transfer.Outputs.Volume;
         Debug.Assert(mix.Sum.AlmostEquals(totalVolume));
 
         var testSum = 0.0;

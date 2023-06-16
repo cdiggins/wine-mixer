@@ -43,6 +43,9 @@ public class TankFinder
         // If we have considered all of the tanks we are done 
         if (depth >= NumTanks)
             yield break;
+        
+        // Get the volume of the current tank
+        var tankVolume = TankSizes[depth];
 
         // Terminate early if we have the maximum number of tanks 
         if (prevList.Count == MaxCount)
@@ -57,7 +60,6 @@ public class TankFinder
             yield break;
         
         // We are going to try adding this tank 
-        var tankVolume = TankSizes[depth];
         var nextList = prevList.AddTank(tankVolume, depth);
         
         // Too much volume so we can stop 
@@ -68,7 +70,7 @@ public class TankFinder
         if (nextList.Volume == target)
             yield return nextList;
         else
-            // Recursively look for possibilities 
+            // Recursively look for possibilities with this tank added  
             foreach (var tmp in GetPermutationsOfVolume(target, nextList, depth + 1))
                 yield return tmp;
     }
@@ -81,6 +83,9 @@ public class TankFinder
         // If we have considered all of the tanks we are done 
         if (depth >= NumTanks)
             yield break;
+
+        // Get the volume of the current tank
+        var tankVolume = TankSizes[depth];
 
         // Terminate early if we have the maximum number of tanks 
         if (prevList.Count == MaxCount)
@@ -95,9 +100,9 @@ public class TankFinder
             yield break;
 
         // We are going to try adding this tank 
-        var tankVolume = TankSizes[depth];
         var nextList = prevList.AddTank(tankVolume, depth);
 
+        // Return the generated list
         yield return nextList;
 
         // Recursively look for possibilities 
