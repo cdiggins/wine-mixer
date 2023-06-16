@@ -56,7 +56,6 @@ namespace WineMixer
             Console.WriteLine($"The number of starting tanks is {config.NumTanks}");
             Console.WriteLine($"The smallest tank is {config.Sizes.Min()} and the largest is {config.Sizes.Max()}");
             Console.WriteLine($"The starting amount of wine is {config.InitialWineAmount}");
-            Console.WriteLine($"The total number of tank configurations for transfer input/output is {config.TankLists}");
             Console.WriteLine($"JSON options provided are: {config.Options}");
         }
 

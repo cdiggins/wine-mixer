@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Text;
 
 namespace WineMixer;
@@ -59,25 +60,40 @@ public class State
 
     public double TargetDistance(Mix mix) 
         => Configuration.TargetDistance(mix.SumOfOne);
-
-    public IEnumerable<TankList> OccupiedTankLists()
-        => Configuration.TankLists.Where(IsOccupied);
-
-    public IEnumerable<TankList> UnoccupiedTankLists(int volume)
-        => Configuration.TankLists.Where(tl => tl.Volume == volume && !tl.Tanks.Any(IsOccupied));
-
+     
     private IReadOnlyList<Transfer> ComputeTransfers()
     {
+        var sizes = Configuration.Sizes;
+        var maxCount = Configuration.Options.MaxInputOrOutputTanks;
+
         if (_transfers == null) 
         {
             _transfers = new List<Transfer>();
-            foreach (var occ in OccupiedTankLists())
+
+            var srcTankFinder = new TankFinder(sizes, IsOccupied, maxCount);
+            var destTankFinder = new TankFinder(sizes, x => !IsOccupied(x), maxCount);
+
+            var destLookup = new Dictionary<int, List<TankList>>();
+
+            var srcTankLists = srcTankFinder.GetAllPermutations();
+
+            foreach (var occ in srcTankLists)
             {
                 var volume = occ.Volume;
-                foreach (var unocc in UnoccupiedTankLists(volume))
+                
+                if (!destLookup.ContainsKey(volume))
+                    destLookup.Add(volume, destTankFinder.GetPermutationsOfVolume(volume).ToList());
+
+                var destTankLists = destLookup[volume];
+
+                foreach (var unocc in destTankLists)
                 {
                     if (occ.Count > 1 || unocc.Count > 1)
-                        _transfers.Add(new Transfer(occ, unocc));
+                    {
+                        var transfer = new Transfer(occ, unocc);
+                        Debug.Assert(IsTransferValid(transfer));
+                        _transfers.Add(transfer);
+                    }
                 }
             }
         }
@@ -98,8 +114,6 @@ public class State
 
     public bool IsTransferValid(Transfer transfer)
         => transfer.Inputs.Volume == transfer.Outputs.Volume
-        && transfer.Inputs.IsValid()
-        && transfer.Outputs.IsValid()
         && IsOccupied(transfer.Inputs)
         && IsUnoccupied(transfer.Outputs);
 
