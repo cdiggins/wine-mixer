@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Text;
+using WineMixer.Serialization;
 
 namespace WineMixer;
 
@@ -49,8 +50,25 @@ public class State
     public IReadOnlyList<Transfer> Transfers => ComputeTransfers();
     private List<Transfer> _transfers;
 
+    private double _score = double.MaxValue;
+
+    public double Score
+    {
+        get
+        {
+            if (_score >= double.MaxValue)
+            {
+                _score = Mixes.Min(TargetDistance);
+            }
+            return _score;
+        }
+    }
+
     public bool IsOccupied(int i) 
         => Contents[i] != null;
+
+    public bool IsUnoccupied(int i)
+        => Contents[i] == null;
 
     public Mix this[int i]
         => Contents[i];
@@ -71,14 +89,17 @@ public class State
             _transfers = new List<Transfer>();
 
             var srcTankFinder = new TankFinder(sizes, IsOccupied, maxCount);
-            var destTankFinder = new TankFinder(sizes, x => !IsOccupied(x), maxCount);
+            var destTankFinder = new TankFinder(sizes, IsUnoccupied, maxCount);
 
             var destLookup = new Dictionary<int, List<TankList>>();
 
-            var srcTankLists = srcTankFinder.GetAllPermutations();
+            var srcTankLists = srcTankFinder.GetAllPermutations().ToList();
 
             foreach (var occ in srcTankLists)
             {
+                if (occ.Volume == 0)
+                    continue;
+
                 var volume = occ.Volume;
                 
                 if (!destLookup.ContainsKey(volume))

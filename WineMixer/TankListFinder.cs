@@ -78,8 +78,6 @@ public class TankFinder
 
     public IEnumerable<TankList> GetAllPermutations(TankList prevList, int depth)
     {
-        yield return prevList;
-
         // If we have considered all of the tanks we are done 
         if (depth >= NumTanks)
             yield break;
@@ -99,6 +97,8 @@ public class TankFinder
         // We are going to try adding this tank 
         var tankVolume = TankSizes[depth];
         var nextList = prevList.AddTank(tankVolume, depth);
+
+        yield return nextList;
 
         // Recursively look for possibilities 
         foreach (var tmp in GetAllPermutations(nextList, depth + 1))

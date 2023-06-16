@@ -17,7 +17,6 @@ public class Configuration
         if (sizes.Count < NumWines)
             throw new Exception("The number of starting tanks has to be equal to or greater than the number of wines");
         Options = options;
-        var sw = Stopwatch.StartNew();
         Volume = Sizes.Sum();
         EmptyMix = new Mix(Enumerable.Repeat(0.0, NumWines).ToArray());
         InitialWineAmount = sizes.Take(NumWines).Sum();

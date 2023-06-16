@@ -16,12 +16,12 @@ public class Evaluator
     public Transfer GetBestTransfer(State state)
     {
         var candidates = state.Transfers
-            .GroupBy(t => EvaluateByMix(state.Apply(t)))
+            .GroupBy(t => EvaluateByTransfers(state.Apply(t)))
             .MinBy(g => g.Key)
             .ToList();
         var results = candidates
-            .GroupBy(t => EvaluateByTransfers(state.Apply(t)))
-            .MinBy(g => g.Key)
+            //.GroupBy(t => EvaluateByMix(state.Apply(t)))
+            //.MinBy(g => g.Key)
             .ToList();
         Console.WriteLine($"Considered {state.Transfers.Count}, found {candidates.Count} candidates, and {results.Count} results");
         return results.First();

@@ -23,4 +23,9 @@ public class TankList
         var tmp = new List<int>(Tanks) { tankIndex };
         return new TankList(Volume + tankVolume, tmp);
     }
+
+    public override string ToString()
+    {
+        return $"V={Volume}({string.Join(", ", Tanks)})";
+    }
 }

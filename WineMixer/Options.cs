@@ -6,7 +6,7 @@ public class Options
 {
     // public bool MinimizeWaste { get; set; } 
     // public long TimeOutInSeconds { get; set; }
-    public int MaxInputOrOutputTanks { get; set; } = 4;
+    public int MaxInputOrOutputTanks { get; set; } = 3;
     public bool RunInParallel { get; set; } = true;
     public string? OutputBlendFileName { get; set; } = "result.txt";
     public string? OutputStepsFileName { get; set; } = "steps.txt";
