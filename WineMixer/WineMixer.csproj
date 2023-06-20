@@ -12,6 +12,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="input\recipe.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="input\recipe_small1.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="input\tanks.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="input\tanks_small1.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="usage.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

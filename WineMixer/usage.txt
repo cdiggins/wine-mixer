@@ -25,11 +25,8 @@ This program takes two mandatory command-line arguments, and an optional third c
 
 This program will output to the standard output detailed information about the blending process as it happens. 
 
-This program will also create three files in a folder by default called "output". The output folder
+This program will also create two files in a folder by default called "output". The output folder
 and the file names can be controlled via options.
-
-	<output-{datetime}.json> - a JSON file with a unique date stamped name that expresses detailed information 
-	about the process, and the state of the system at each step. 
 
 	<steps.txt> - the steps of the blending process in a simple text format
 

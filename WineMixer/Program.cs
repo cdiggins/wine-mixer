@@ -93,7 +93,7 @@ namespace WineMixer
                 catch (Exception _)
                 {
                     ShowUsage(false);
-                    throw;
+                    return;
                 }
 
                 OutputConfigurationAnalysis(config);
